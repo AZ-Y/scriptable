@@ -1,40 +1,71 @@
 /**
- * Surge Script for 兴攀农场
- * Author: Mist
- * Date: 2024-06-22
+ * Quantumult X Script for 兴攀农场
+ * Author: Mist (Modified for Quantumult X by Kimi)
+ * Date: 2024-07-01
  */
 
-const env_name = 'xpnc'; // 环境变量名字
-const env = $.getdata.read(env_name) || '';
-const Notify = 1; // 是否通知, 1通知, 0不通知. 默认通知
+const envName = 'xpnc'; // 环境变量名字
+const env = $prefs.valueForKey(envName) || '';
+const notify = 1; // 是否通知, 1通知, 0不通知. 默认通知
 const debug = 0; // 是否调试, 1调试, 0不调试. 默认不调试
 let msg = '';
 
 // 脚本入口函数
-(async () => {
-    if (env === '') {
-        console.log(`没有填写变量,请查看脚本说明: ${env_name}`);
+async function main() {
+    if (!env) {
+        console.log(`没有填写变量,请查看脚本说明: ${envName}`);
         return;
     }
-    let user_ck = env.split('\n');
-		console.log(`\n========== 共找到 ${user_ck.length} 个账号 ==========`);
-    for (let i = 0; i < user_ck.length; i++) {
-        if (!user_ck[i]) continue;
-        let ck_info = user_ck[i].split('&');
-        let authorization = ck_info[0];
-        let user = {
+    const userCookies = env.split('\n');
+    console.log(`\n========== 共找到 ${userCookies.length} 个账号 ==========`);
+    for (let i = 0; i < userCookies.length; i++) {
+        if (!userCookies[i]) continue;
+        const user = {
             index: i + 1,
-            authorization,
+            authorization: userCookies[i],
         };
         await userTask(user);
-        let rnd_time = Math.floor(Math.random() * 4000) + 1000;
-        console.log(`账号[${user.index}]随机等待${rnd_time / 1000}秒...`);
-        await wait(rnd_time / 1000);
+        await wait(Math.floor(Math.random() * 4000) + 1000);
     }
-    if (Notify > 0) {
-        $notification.post('兴攀农场', '', msg);
+    if (notify) {
+        $notify('兴攀农场', '', msg);
     }
-})().catch((e) => console.log(e));
+}
+
+// 其他函数保持不变，只需要替换内部的API调用即可
+
+// 网络请求函数
+function httpRequest(options) {
+    return new Promise((resolve) => {
+        $httpClient[options.method](options, (err, resp, data) => {
+            if (err) {
+                console.log(JSON.stringify(err));
+                resolve(null);
+            } else {
+                try {
+                    data = JSON.parse(data);
+                } catch (e) {
+                    data = null;
+                }
+                resolve(data);
+            }
+        });
+    });
+}
+
+// 等待 X 秒
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 双平台 log 输出
+function doubleLog(data) {
+    console.log(data);
+    msg += `\n${data}`;
+}
+
+// 执行脚本
+main().catch((e) => console.log(e));
 
 // 账号任务
 async function userTask(user) {
