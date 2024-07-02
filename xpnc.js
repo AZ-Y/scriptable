@@ -1,14 +1,15 @@
 /**
  * Surge Script for 兴攀农场
  * Author: Mist
- * Date: 2024-06-22
+ * Date: 2024-07-02
  */
 
 const env_name = 'xpnc'; // 环境变量名字
 const env = $prefs.valueForKey(env_name) || '';
 const Notify = 1; // 是否通知, 1通知, 0不通知. 默认通知
 const debug = 0; // 是否调试, 1调试, 0不调试. 默认不调试
-let msg = '';
+
+let allTasksSuccessful = true;  // 用于标记所有任务是否成功
 
 // 脚本入口函数
 (async () => {
@@ -26,34 +27,36 @@ let msg = '';
             index: i + 1,
             authorization,
         };
-        await userTask(user);
-        let rnd_time = Math.floor(Math.random() * 4000) + 1000;
-        console.log(`账号[${user.index}]随机等待${rnd_time / 1000}秒...`);
-        await wait(rnd_time / 1000);
+        allTasksSuccessful = await userTask(user) && allTasksSuccessful;  // 记录每个账号任务的执行结果
     }
     if (Notify > 0) {
-        // 在 Quantumult X 中，通知的实现方式可能不同，此处可能需要进一步修改或无法实现
+        let notificationMessage = allTasksSuccessful? '所有账号任务成功完成' : '有账号任务执行失败';
+        $notify("兴攀农场账号任务结果", notificationMessage);
     }
 })().catch((e) => console.log(e));
 
 // 账号任务
 async function userTask(user) {
     console.log(`\n============= 账号[${user.index}]开始任务 =============`);
-    await Sign(user);
+    let taskSuccessful = true;  // 用于标记当前账号的任务是否成功
+
+    await Sign(user).catch(() => { taskSuccessful = false; });
     await wait(1);
     for (let i = 1; i < 17; i++) {
-        await Task(user, i);
+        await Task(user, i).catch(() => { taskSuccessful = false; });
         await wait(1);
-        await Reward(user, i);
+        await Reward(user, i).catch(() => { taskSuccessful = false; });
         await wait(1);
     }
-    await Fertilizer(user);
+    await Fertilizer(user).catch(() => { taskSuccessful = false; });
     await wait(1);
     for (let i = 0; i < 10; i++) {
-        await Water(user);
+        await Water(user).catch(() => { taskSuccessful = false; });
         await wait(1);
     }
-    await HomePage(user);
+    await HomePage(user).catch(() => { taskSuccessful = false; });
+
+    return taskSuccessful;  // 返回当前账号任务的执行结果
 }
 
 // 签到
@@ -70,9 +73,9 @@ async function Sign(user) {
     };
     let result = await httpRequest(urlObject);
     if (result?.code === '1000') {
-        DoubleLog(`🌸账号[${user.index}]🕊签到成功-获得${result.data.reward.integral}积分🎉`);
+        console.log(`🌸账号[${user.index}]🕊签到成功-获得${result.data.reward.integral}积分🎉`);
     } else {
-        DoubleLog(`🌸账号[${user.index}]签到-状态:${result.message}`);
+        console.log(`🌸账号[${user.index}]签到-状态:${result.message}`);
     }
 }
 
@@ -130,9 +133,9 @@ async function Fertilizer(user) {
     };
     let result = await httpRequest(urlObject);
     if (result?.code === '1000') {
-        DoubleLog(`🌸账号[${user.index}]🕊施肥成功,总肥力${result.data.fertilizer}🎉`);
+        console.log(`🌸账号[${user.index}]🕊施肥成功,总肥力${result.data.fertilizer}🎉`);
     } else {
-        DoubleLog(`🌸账号[${user.index}]施肥状态:${result.message}`);
+        console.log(`🌸账号[${user.index}]施肥状态:${result.message}`);
     }
 }
 
@@ -170,9 +173,9 @@ async function HomePage(user) {
     };
     let result = await httpRequest(urlObject);
     if (result?.code === '1000') {
-        DoubleLog(`🌸账号[${user.index}]🕊果树🌳当前状态[${result.data.type_name}]-进度[${result.data.growth_level}]-剩余肥力[${result.data.fertilizer}]-💧[${result.data.water_value}]🎉`);
+        console.log(`🌸账号[${user.index}]🕊果树🌳当前状态[${result.data.type_name}]-进度[${result.data.growth_level}]-剩余肥力[${result.data.fertilizer}]-💧[${result.data.water_value}]🎉`);
     } else {
-        DoubleLog(`🌸账号[${user.index}]查询🔍:${result.message}果树🌳当前状态[${result.data.type_name}]-进度[${result.data.growth_level}]-剩余肥力[${result.data.fertilizer}]-💧[${result.data.water_value}]`);
+        console.log(`🌸账号[${user.index}]查询🔍:${result.message}果树🌳当前状态[${result.data.type_name}]-进度[${result.data.growth_level}]-剩余肥力[${result.data.fertilizer}]-💧[${result.data.water_value}]`);
     }
 }
 
@@ -193,13 +196,7 @@ function httpRequest(options) {
     });
 }
 
-// 双平台 log 输出
-function DoubleLog(data) {
-    console.log(data);
-    msg += `${data}`;
-}
-
-// 等待 X 秒
+// 等待函数
 function wait(n) {
     return new Promise((resolve) => setTimeout(resolve, n * 1000));
 }
