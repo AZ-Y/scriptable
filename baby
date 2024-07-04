@@ -2,7 +2,7 @@
 hostname = %APPEND% api.bckid.com.cn
 
 [rewrite_local]
-# 拦截指定的请求并运行脚本以获取 Cookie
+# 拦截指定的请求并运行脚本获取 Cookie
 ^https:\/\/api\.bckid\.com\.cn\/search\/front\/product\/search\/productSearch url script-request-header https://raw.githubusercontent.com/yang7758258/ohhh_QL-Script/main/babycare.js
 
 [task_local]
