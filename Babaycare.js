@@ -6,12 +6,6 @@
  * export babaycare= authorization     多账号换行或者#分隔
  */
 
-// 环境变量名字
-const env_name = 'babaycare';
-
-// 获取环境变量
-const env = $env(env_name) || '';
-
 // 是否通知, 1 通知, 0 不通知. 默认通知
 const Notify = 1;
 
@@ -28,14 +22,16 @@ let msg = "";
     await main();  // 主函数
     await SendMsg(msg);  // 发送通知
 })()
-  .catch((e) => console.error(e))
-  .finally(() => {});
+ .catch((e) => console.error(e))
+ .finally(() => {});
 
 // 脚本入口函数 main()
 async function main() {
+    // 使用 $persistentStore.read 来获取环境变量
+    const env = $persistentStore.read('babaycare') || '';
     if (env == '') {
         // 没有设置变量,直接退出
-        console.log(`没有填写变量,请查看脚本说明: ${env_name}`);
+        console.log(`没有填写变量,请查看脚本说明: babaycare`);
         return;
     }
     let user_ck = env.split('\n');
