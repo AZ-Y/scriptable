@@ -6,10 +6,6 @@
  * export babaycare= authorization     多账号换行或者#分隔
  */
 
-// 引入所需模块
-const axios = require('axios');
-const md5 = require('md5');
-
 // 环境变量名字
 const env_name = 'babaycare';
 
@@ -32,8 +28,8 @@ let msg = "";
     await main();  // 主函数
     await SendMsg(msg);  // 发送通知
 })()
-   .catch((e) => console.error(e))
-   .finally(() => {});
+  .catch((e) => console.error(e))
+  .finally(() => {});
 
 // 脚本入口函数 main()
 async function main() {
@@ -84,7 +80,8 @@ async function SignInDailyScore(user) {
             },
             data: {}
         };
-        let { data: result } = await axios.request(urlObject);
+        let response = await axios.request(urlObject);
+        let result = response.data;
         if (result?.code == '200') {
             // 打印签到结果
             console.log(`🌸账号[${user.index}]` + `🕊当前已签到${result.body.signDaysCountMod}天🎉`);
@@ -111,7 +108,8 @@ async function GetUserPoint(user) {
             },
             data: {}
         };
-        let { data: result } = await axios.request(urlObject);
+        let response = await axios.request(urlObject);
+        let result = response.data;
         if (result?.code == '200') {
             // 打印签到结果
             console.log(`🌸账号[${user.index}]` + `🕊账户当前积分[${result.body.userBonus}],历史积分[${result.body.sumBonus}]💰`);
@@ -169,21 +167,23 @@ function getTimestamp() {
     return new Date().getTime();
 }
 
-//===============================================网络请求 httpRequest=========================================
-function httpRequest(options, timeout = 1 * 1000) {
+// 网络请求函数
+async function httpRequest(options, timeout = 1 * 1000) {
     let method = options.method? options.method.toLowerCase() : options.body? "post" : "get";
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            axios[method](options.url, options.data, { headers: options.headers })
-              .then((response) => {
-                    resolve(response.data);
-                })
-              .catch((error) => {
-                    console.log(JSON.stringify(error));
-                    resolve(null);
-                });
-        }, timeout);
-    });
+    let response;
+    try {
+        response = await axios({
+            method,
+            url: options.url,
+            headers: options.headers,
+            data: options.data,
+            timeout
+        });
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
+    return response.data;
 }
 
 //==============================================获取远程通知========================================
@@ -208,20 +208,15 @@ async function getNotice() {
 }
 
 //==============================================获取远程版本=================================================
-function getVersion(scriptUrl, timeout = 3 * 1000) {
-    return new Promise((resolve) => {
+async function getVersion(scriptUrl, timeout = 3 * 1000) {
+    try {
         const options = { url: `https://fastly.jsdelivr.net/gh/${scriptUrl}` };
-        axios.get(options.url, { headers: options.headers })
-          .then((response) => {
-                const regex = /scriptVersionNow\s*=\s*(["'`])([\d.]+)\1/;
-                const match = response.data.match(regex);
-                const scriptVersionLatest = match? match[2] : "";
-                console.log(`\n============= 当前版本：${scriptVersionNow} 🌟 最新版本：${scriptVersionLatest} =============`);
-                resolve();
-            })
-          .catch((error) => {
-                console.error(error, response);
-                resolve();
-            });
-    });
+        const response = await axios.get(options.url, { timeout });
+        const regex = /scriptVersionNow\s*=\s*(["'`])([\d.]+)\1/;
+        const match = response.data.match(regex);
+        const scriptVersionLatest = match? match[2] : "";
+        console.log(`\n============= 当前版本：${scriptVersionNow} 🌟 最新版本：${scriptVersionLatest} =============`);
+    } catch (error) {
+        console.error(error, response);
+    }
 }
