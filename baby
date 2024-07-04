@@ -1,10 +1,9 @@
-
 [MITM]
 hostname = %APPEND% api.bckid.com.cn
 
 [rewrite_local]
 # 拦截指定的请求并运行脚本
-^https:\/\/api\.bckid\.com\.cn\/search\/front\/product\/search\/productSearch url script-request-body get_ck.js
+^https:\/\/api\.bckid\.com\.cn\/search\/front\/product\/search\/productSearch url script-request-body https://raw.githubusercontent.com/yang7758258/ohhh_QL-Script/main/babycare.js
 
 [task_local]
 # 定时任务配置，使用外部脚本 URL
