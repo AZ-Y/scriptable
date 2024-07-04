@@ -1,8 +1,5 @@
 [MITM]
 hostname = %APPEND% api.bckid.com.cn
 
-[script-request-header]
-^https:\/\/api\.bckid\.com\.cn\/.* url script-request-header https://raw.githubusercontent.com/yang7758258/ohhh_QL-Script/main/babycare.js
-
-[task_local]
-# https://raw.githubusercontent.com/yang7758258/ohhh_QL-Script/main/babycare.js
+[script-response-body]
+^https:\/\/api\.bckid\.com\.cn\/.* url script-response-body https://raw.githubusercontent.com/yang7758258/ohhh_QL-Script/main/babycare.js
