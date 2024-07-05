@@ -1,7 +1,7 @@
 const $ = new Env('Bckid 自动抓包');
 
-// 获取 token
-const token = $.getdata('bckid_token'); // 从 Quantumult X 数据中获取 token
+// 从 Quantumult X 数据中获取 token
+const token = $prefs.valueForKey('bckid_token'); // 使用 $prefs
 
 !(async () => {
     try {
@@ -93,11 +93,11 @@ function Env(name) {
     this.logs = [];
 
     this.getval = function (key) {
-        return this.data[key] || null;
+        return $prefs.valueForKey(key) || null;
     };
 
     this.setval = function (value, key) {
-        return this.data[key] = value;
+        return $prefs.setValueForKey(value, key);
     };
 
     this.log = function (...args) {
