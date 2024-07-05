@@ -1,0 +1,34 @@
+{
+  "id": "Az.app.sub",
+  "name": "Az",
+  "author": "@Az",
+  "icon": "https://gitcode.net/4qiao/framework/raw/master/img/icon/4qiao.png",
+  "repo": "https://gitcode.net/4qiao/scriptable",
+  "apps": [
+    {
+      "id": "body_12123",
+      "name": "交管12123",
+      "author": "@95du",
+      "script": "https://gitcode.net/4qiao/scriptable/raw/master/quanX/getToken_12123.js",
+      "descs_html": [
+        "<img src=\"https://gitcode.net/4qiao/framework/raw/master/img/picture/widget.gif\" style=\"width: 320px; height: auto; margin: 0 auto; display: block;\" />",
+        "<br />", 
+        "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>跳转到 👉 </font><a href=\"alipays://platformapi/startapp?appId=2019050964403523&page=pages/index/index\">支付宝12123</a></h2>"
+      ],
+      "icons": [
+        "https://raw.githubusercontent.com/FoKit/Scripts/main/images/12123.png",
+        "https://raw.githubusercontent.com/FoKit/Scripts/main/images/12123.png"
+      ],
+      "keys": [
+        "body_12123"
+      ],
+      "settings": [
+        {
+          "id": "body_12123",
+          "name": "Body",
+          "val": "",
+          "type": "textarea",
+          "desc": ""
+        }
+      ]
+    }
