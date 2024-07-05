@@ -3,7 +3,7 @@
   "name": "Az",
   "author": "@Az",
   "icon": "https://gitcode.net/4qiao/framework/raw/master/img/icon/4qiao.png",
-  "repo": "https://raw.githubusercontent.com/AZ-Y/scriptable/AZ-Y-js-1/xpnc.js",
+  "repo": "https://github.com/AZ-Y/scriptable/tree/main",
   "apps": [
     {
       "id": "body_兴攀农场",
