@@ -3,7 +3,7 @@
   "name": "Az",
   "author": "@Az",
   "icon": "https://gitcode.net/4qiao/framework/raw/master/img/icon/4qiao.png",
-  "repo": "https://gitcode.net/4qiao/scriptable",
+  "repo": "https://github.com/AZ-Y/scriptable.git",
   "apps": [
     {
       "id": "body_12123",
