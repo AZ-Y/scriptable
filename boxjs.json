@@ -9,7 +9,7 @@
       "id": "body_12123",
       "name": "交管12123",
       "author": "@95du",
-      "script": "https://gitcode.net/4qiao/scriptable/raw/master/quanX/getToken_12123.js",
+      "script": "https://github.com/AZ-Y/scriptable.git",
       "descs_html": [
         "<img src=\"https://gitcode.net/4qiao/framework/raw/master/img/picture/widget.gif\" style=\"width: 320px; height: auto; margin: 0 auto; display: block;\" />",
         "<br />", 
