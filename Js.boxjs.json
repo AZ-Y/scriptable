@@ -10,10 +10,6 @@
       "name": "兴攀农场",
       "author": "@Az",
       "script": "https://raw.githubusercontent.com/AZ-Y/scriptable/AZ-Y-js-1/xpnc.js",
-      "icons": [
-        "https://sweixinfile.hisense.com/media/M00/85/4E/Ch4FyWaCuOOAHj-KAACCfq0203M492.png",
-        "https://sweixinfile.hisense.com/media/M00/85/4E/Ch4FyWaCuOOAHj-KAACCfq0203M492.png"
-      ],
       "keys": [
         "body_兴攀农场"
       ],
