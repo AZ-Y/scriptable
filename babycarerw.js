@@ -1,15 +1,21 @@
 const $ = new Env('bckid');
 
 !(async () => {
-    if ($request && $request.headers) {
-        const token = $request.headers['Authorization'];
-        if (token) {
-            $.log(`获取到的 token: ${token}`);
-            $.setdata(token, 'bckid_token');
-            $.msg($.name, 'Token 获取成功', token);
+    try {
+        if ($response && $response.headers) {
+            const token = $response.headers['Authorization'];
+            if (token) {
+                $.log(`获取到的 token: ${token}`);
+                $.setdata(token, 'bckid_token');
+                $.msg($.name, 'Token 获取成功', token);
+            } else {
+                $.msg($.name, 'Token 获取失败', '未找到 Authorization 头');
+            }
         } else {
-            $.msg($.name, 'Token 获取失败', '未找到 Authorization 头');
+            $.log(`没有找到响应头: ${JSON.stringify($response)}`);
         }
+    } catch (error) {
+        $.log(`脚本运行出错: ${error}`);
     }
 })().finally(() => $.done());
 
@@ -19,9 +25,7 @@ function Env(t, e) {
             this.env = t
         }
         send(t, e = "GET") {
-            t = "string" == typeof t ? {
-                url: t
-            } : t;
+            t = "string" == typeof t ? { url: t } : t;
             let s = this.get;
             return "POST" === e && (s = this.post), new Promise((e, i) => {
                 s.call(this, t, (t, s, r) => {
@@ -164,4 +168,19 @@ function Env(t, e) {
             })), $task.fetch(t).then(t => {
                 const {
                     statusCode: s,
-                    statusCode
+                    statusCode: r,
+                    headers: i,
+                    body: o
+                } = t;
+                e(null, {
+                    status: s,
+                    statusCode: r,
+                    headers: i,
+                    body: o
+                }, o)
+            }, t => e(t && t.error || "UndefinedError"));
+            else if (this.isNode()) {
+                this.initGotEnv(t);
+                const {
+                    url: i,
+                   
