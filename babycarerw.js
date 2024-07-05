@@ -1,7 +1,7 @@
 const $ = new Env('Bckid 自动抓包');
 
 // 从 Quantumult X 数据中获取 token
-const token = $prefs.valueForKey('bckid_token'); // 使用 $prefs
+const token = $prefs.valueForKey('bckid_token'); // 使用 $prefs 来获取 token
 
 !(async () => {
     try {
