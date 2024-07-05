@@ -5,6 +5,8 @@ async function getToken() {
     if ($request && $request.url.indexOf("https://api.bckid.com.cn/operation/front/bonus/userTask/list") > -1) {
         // 从请求头中提取 Cookie 或 Token
         const cookie = $request.headers['Cookie'] || $request.headers['cookie'];
+        console.log('请求 URL:', $request.url);
+        console.log('请求头:', $request.headers);
         if (cookie) {
             // 将获取到的 Cookie 存储到 Quantumult X 数据存储中
             $.setval(cookie, 'bckid_token');
