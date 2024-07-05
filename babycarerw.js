@@ -1,13 +1,14 @@
 ========== Quantumult X ===========
 [rewrite_local]
-^https:\/\/h5api\.m\.taobao\.com\/h5\/mtop\.taobao\.reborn\.mclaren\.h5 url script-request-header https://gitcode.net/4qiao/scriptable/raw/master/quanX/get_taobao_cookie.js
+token = type=http-response,pattern=^https:\/\/api.bckid.com.cn\/operation\/front\/bonus\/userTask\/list,script-path=https://yourscriptpath.js,requires-body=1,max-size=0
+
 [MITM]
-hostname = h5api.m.taobao.com
+hostname = %APPEND% api.bckid.com.cn
 
 */
 
-const $ = new Env('淘宝');
-$.cookie_key = 'taobao_cookie';
+const $ = new Env('babycare');
+$.cookie_key = 'babycare_cookie';
 $.boxjs_cookie = $.getdata($.cookie_key);
 $.is_debug = $.getdata('is_debug');
 
@@ -17,11 +18,11 @@ $.is_debug = $.getdata('is_debug');
   }
   
   function GetCookie() {
-    if ($request && $request.url.indexOf("https://h5api.m.taobao.com/h5/mtop.taobao.reborn.mclaren.h5") > -1 && $request.headers) {
-      $.taobao_cookie = $request['headers']['Cookie'] || $request['headers']['cookie'];
-      if ($.taobao_cookie !== $.boxjs_cookie) {
-        $.setdata($.taobao_cookie, $.cookie_key);
-        $.msg($.name + '_Cookie 获取成功', ``, $.taobao_cookie);
+    if ($request && $request.url.indexOf("https://api.bckid.com.cn") > -1 && $request.headers) {
+      $.babycare_cookie = $request['headers']['Cookie'] || $request['headers']['cookie'];
+      if ($.babycare_cookie !== $.boxjs_cookie) {
+        $.setdata($.Babycare_cookie, $.cookie_key);
+        $.msg($.name + '_Cookie 获取成功', ``, $.babycare_cookie);
       } else {
         console.log(`无需更新 Cookie 🚫\n${$.taobao_cookie}`);
       }
