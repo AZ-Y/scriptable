@@ -1,4 +1,4 @@
-const topspace = "GoJsWDOBkJ1zazOlyy4VQQB6CmgJWdnZ&53555ab5e1bc443cb5dda125fb2e26d4";
+    const topspace = "GoJsWDOBkJ1zazOlyy4VQQB6CmgJWdnZ&53555ab5e1bc443cb5dda125fb2e26d4";
 
 if (!topspace) {
     console.log("请设置环境变量 'topspace' 后再运行");
