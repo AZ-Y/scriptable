@@ -54,9 +54,9 @@ async function getCookie() {
         return;
     }
     const newData = {"authorization": authorization};
-    const index = Yadea.findIndex(e => e.authorization == newData.authorization);
+    const index = Babaycare.findIndex(e => e.authorization == newData.authorization);
     if (index !== -1) {
-        if (Yadea[index].authorization == newData.authorization) {
+        if (Babaycare[index].authorization == newData.authorization) {
             console.log('Authorization未改变');
             return;
         } else {
@@ -65,7 +65,7 @@ async function getCookie() {
             $.msg($.name, '更新authorization成功!', '');
         }
     } else {
-        Yadea.push(newData);
+        Babaycare.push(newData);
         console.log('新增authorization:', newData.authorization);
         $.msg($.name, '新增authorization成功!', '');
     }
