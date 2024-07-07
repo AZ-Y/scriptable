@@ -1,5 +1,5 @@
-#!name=babycare小程序签到
-#!desc=
+#!name=babycare
+#!desc=babycare
 #!category=羊毛
 
 [Script]
