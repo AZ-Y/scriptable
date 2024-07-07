@@ -1,70 +1,110 @@
-const $ = new Env("雅迪星球");
-const _key = 'yadea_data';
-$.huihui = $.toObj(getEnv(_key)) || {};
-$.is_debug = 'true-';
-$.messages = [];
+const $ = new Env('雅迪星球');
+const Yadea = ($.isNode() ? JSON.parse(process.env.Yadea) : $.getjson("Yadea")) || [];
+let Utils = undefined;
+let notice = '';
 
-async function main() {
-    await tasks();
-}
-
-async function tasks() {
-    const url = `https://opmd.yadea.com.cn/api/miniprogram/custom-promotion/memberSign`;
-    const body = JSON.stringify({});  // 根据实际需求填写请求体
-    const headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN",
-        "Authorization": $.huihui.token  // 使用你存储的 token
-    };
-    const {status, message} = await httpRequest({url, body, headers});
-    pushMsg(status === 200 ? '请求成功' : message);
-}
-
-// 取 Authorization
-function getCk() {
-    if ($request && $request.method != 'OPTIONS') {
-        const authorization = $request.headers['Authorization'];  // 从请求头中提取 Authorization
-        if (authorization) {
-            const ckVal = $.toStr({authorization});
-            $.setdata(ckVal, _key);
-            $.msg($.name, '', '获取授权数据成功🎉\n' + ckVal);
-        } else {
-            $.msg($.name, '', 'Authorization 头部未找到');
-        }
-    }
-}
-
-// 脚本执行入口
-(async () => {
-    if (typeof $request !== 'undefined') {
-        await getCk();
+!(async () => {
+    if (typeof $request != "undefined") {
+        await getCookie();
     } else {
         await main();
     }
-})().catch((e) => $.messages.push(e.message || e) && $.logErr(e))
-    .finally(async () => {
-        await sendMsg($.messages.join('\n').trimStart().trimEnd());  // 推送通知
-        $.done();
-    })
+})().catch((e) => {$.log(e)}).finally(() => {$.done({});});
 
-// 从 URL 中提取参数的函数
-function getParameterByName(name, url) {
-    if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, '\\$&');
-    const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
-    const results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+async function main() {
+    console.log('雅迪星球开始\n频道感谢原作者大老师');
+    Utils = await loadUtils();
+    for (const item of Yadea) {
+        const authorization = item.authorization;
+        console.log(`开始签到，authorization: ${authorization}`);
+        let sign = await commonPost('https://opmd.yadea.com.cn/api/miniprogram/custom-promotion/memberSign', {}, authorization);
+        console.log(`签到结果: ${JSON.stringify(sign)}`);
+        if (sign.code === 200) {
+            console.log('签到成功');
+            notice += '签到成功\n';
+        } else {
+            console.log('签到失败:', sign.msg);
+            notice += `签到失败: ${sign.msg}\n`;
+        }
+    }
+    if (notice) {
+        $.msg($.name, '', notice);
+    }
 }
-//
-async function httpRequest(options){try{options=options.url?options:{url:options};const _method=options?._method||('body'in options?'post':'get');const _respType=options?._respType||'body';const _timeout=options?._timeout||15e3;const _http=[new Promise((_,reject)=>setTimeout(()=>reject(`??请求超时:${options['url']}`),_timeout)),new Promise((resolve,reject)=>{debug(options,'[Request]');$[_method.toLowerCase()](options,(error,response,data)=>{debug(data,'[data]');error&&$.log($.toStr(error));if(_respType!=='all'){resolve($.toObj(response?.[_respType],response?.[_respType]));}else{resolve(response);}})})];return await Promise.race(_http);}catch(err){$.logErr(err);}}
-//
-function pushMsg(msg) {$.messages.push(msg.trimEnd()), $.log(msg.trimEnd());}
-//
-function debug(content,title="debug"){let start=`┌---------------↓↓${title}↓↓---------------\n`;let end=`\n└---------------↑↑${$.time('HH:mm:ss')}↑↑---------------`;if($.is_debug==='true'){if(typeof content=="string"){$.log(start+content.replace(/\s+/g,'')+end);}else if(typeof content=="object"){$.log(start+$.toStr(content)+end);}}};
-//
-async function sendMsg(message){if(!message)return;try{if($.isNode()){try{var notify=require('./sendNotify');}catch(e){var notify=require('./utils/sendNotify');}await notify.sendNotify($.name,message);}else{$.msg($.name,'',message);}}catch(e){$.log(`\n\n-----${$.name}-----\n${message}`);}};
+
+async function getCookie() {
+    const authorization = $request.headers['Authorization'];
+    if (!authorization) {
+        console.log('未找到Authorization头部');
+        return;
+    }
+    const newData = {"authorization": authorization};
+    const index = Yadea.findIndex(e => e.authorization == newData.authorization);
+    if (index !== -1) {
+        if (Yadea[index].authorization == newData.authorization) {
+            console.log('Authorization未改变');
+            return;
+        } else {
+            Yadea[index] = newData;
+            console.log('更新authorization:', newData.authorization);
+            $.msg($.name, '更新authorization成功!', '');
+        }
+    } else {
+        Yadea.push(newData);
+        console.log('新增authorization:', newData.authorization);
+        $.msg($.name, '新增authorization成功!', '');
+    }
+    $.setjson(Yadea, "Yadea");
+}
+
+async function commonPost(url, body, authorization) {
+    return new Promise(resolve => {
+        const options = {
+            url: url,
+            headers : {
+                'content-type': 'application/json',
+                'Authorization': authorization,
+                'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN'
+            },
+            body: JSON.stringify(body)
+        };
+        $.post(options, async (err, resp, data) => {
+            try {
+                if (err) {
+                    console.log(`API请求失败: ${JSON.stringify(err)}`);
+                    console.log(`${$.name} API请求失败，请检查网络重试`);
+                } else {
+                    await $.wait(2000);
+                    resolve(JSON.parse(data));
+                }
+            } catch (e) {
+                $.logErr(e, resp);
+            } finally {
+                resolve();
+            }
+        });
+    });
+}
+
+async function loadUtils() {
+    let code = ($.isNode() ? process.env.Utils_Code : $.getdata('Utils_Code')) || '';
+    if (code && Object.keys(code).length) {
+        console.log(`✅ ${$.name}: 缓存中存在Utils代码, 跳过下载`);
+        eval(code);
+        return creatUtils();
+    }
+    console.log(`🚀 ${$.name}: 开始下载Utils代码`);
+    return new Promise(async (resolve) => {
+        $.getScript(
+            'https://cdn.jsdelivr.net/gh/xzxxn777/Surge@main/Utils/Utils.js'
+        ).then((fn) => {
+            $.setdata(fn, "Utils_Code");
+            eval(fn);
+            console.log(`✅ Utils加载成功, 请继续`);
+            resolve(creatUtils());
+        });
+    });
+}
 
 //
 function getEnv(...keys){for(let key of keys){var value=$.isNode()?process.env[key]||process.env[key.toUpperCase()]||process.env[key.toLowerCase()]||$.getdata(key):$.getdata(key);if(value)return value;}};
