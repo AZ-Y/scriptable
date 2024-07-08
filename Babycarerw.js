@@ -1,5 +1,5 @@
 /**************************************
-@Name：babycare小程序签到 签到 
+@Name：Babycare小程序签到 签到 
 @Author：Az
 @Date：2024-7-7
 ====================================
@@ -13,8 +13,8 @@
 6、如果任何单位或个人认为此脚本可能涉嫌侵犯其权利，应及时通知并提供身份证明，所有权证明，我们将在收到认证文件确认后删除此脚本。
 7、所有直接或间接使用、查看此脚本的人均应该仔细阅读此声明。本人保留随时更改或补充此声明的权利。一旦您使用或复制了此脚本，即视为您已接受此免责声明。
 ******************************************/
-const $ = new Env('babycare');
-const babycare = ($.isNode() ? JSON.parse(process.env.babycare) : $.getjson("babycare")) || [];
+const $ = new Env('Babycare');
+const Babycare = ($.isNode() ? JSON.parse(process.env.Babycare) : $.getjson("babycare")) || [];
 let Utils = undefined;
 let notice = '';
 
@@ -27,9 +27,9 @@ let notice = '';
 })().catch((e) => {$.log(e)}).finally(() => {$.done({});});
 
 async function main() {
-    console.log('babycare签到开始\n频道感谢原作者大老师与baby老师');
+    console.log('Babycare签到开始');
     Utils = await loadUtils();
-    for (const item of babycare) {
+    for (const item of Babycare) {
         const authorization = item.authorization;
         console.log(`开始签到，authorization: ${authorization}`);
         let sign = await commonPost('https://api.bckid.com.cn/operation/front/bonus/userSign/v3/sign', {}, authorization);
@@ -54,22 +54,22 @@ async function getCookie() {
         return;
     }
     const newData = {"authorization": authorization};
-    const index = babycare.findIndex(e => e.authorization == newData.authorization);
+    const index = Babycare.findIndex(e => e.authorization == newData.authorization);
     if (index !== -1) {
         if (Babaycare[index].authorization == newData.authorization) {
             console.log('Authorization未改变');
             return;
         } else {
-            Yadea[index] = newData;
+            Babycare[index] = newData;
             console.log('更新authorization:', newData.authorization);
             $.msg($.name, '更新authorization成功!', '');
         }
     } else {
-        babycare.push(newData);
+        Babycare.push(newData);
         console.log('新增authorization:', newData.authorization);
         $.msg($.name, '新增authorization成功!', '');
     }
-    $.setjson(babycare, "babycare");
+    $.setjson(Babycare, "Babycare");
 }
 
 async function commonPost(url, body, authorization) {
