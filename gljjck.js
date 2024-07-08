@@ -7,4 +7,4 @@
 囯乐酱酒 = type=cron,cronexp="8 8,16 * * *",script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/gljjrw.js,script-update-interval=0,timeout=3600,wake-system=1,engine=jsc
 
 [MITM]
-hostname = %APPEND% member.guoyuejiu.com
+hostname =  member.guoyuejiu.com
