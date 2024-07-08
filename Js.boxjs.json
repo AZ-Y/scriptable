@@ -9,7 +9,7 @@
       "id": "body_xpnc",
       "name": "xpnc",
       "author": "@Az",
-      "script": "https://raw.githubusercontent.com/AZ-Y/scriptable/AZ-Y-js-1/xpnc.js",
+      "script": "https://raw.githubusercontent.com/AZ-Y/scriptable/main/xpnc",
       "keys": [
         "body_xpnc"
       ],
