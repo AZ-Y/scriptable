@@ -14,7 +14,7 @@
 7、所有直接或间接使用、查看此脚本的人均应该仔细阅读此声明。本人保留随时更改或补充此声明的权利。一旦您使用或复制了此脚本，即视为您已接受此免责声明。
 ******************************************/
 const $ = new Env('Babycare');
-const Babycare = ($.isNode() ? JSON.parse(process.env.Babycare) : $.getjson("babycare")) || [];
+const Babycare = ($.isNode() ? JSON.parse(process.env.Babycare) : $.getjson("Babycare")) || [];
 let Utils = undefined;
 let notice = '';
 
@@ -100,7 +100,6 @@ async function commonPost(url, body, authorization) {
         });
     });
 }
-
 async function loadUtils() {
     let code = ($.isNode() ? process.env.Utils_Code : $.getdata('Utils_Code')) || '';
     if (code && Object.keys(code).length) {
