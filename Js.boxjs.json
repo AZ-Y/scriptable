@@ -6,16 +6,16 @@
   "repo": "https://github.com/AZ-Y/scriptable/tree/main",
   "apps": [
     {
-      "id": "body_兴攀农场",
-      "name": "兴攀农场",
+      "id": "body_xpnc",
+      "name": "xpnc",
       "author": "@Az",
       "script": "https://raw.githubusercontent.com/AZ-Y/scriptable/AZ-Y-js-1/xpnc.js",
       "keys": [
-        "body_兴攀农场"
+        "body_xpnc"
       ],
       "settings": [
         {
-          "id": "body_兴攀农场",
+          "id": "body_xpnc",
           "name": "Body",
           "val": "",  // 在此处填入实际的环境变量值
           "type": "textarea",
