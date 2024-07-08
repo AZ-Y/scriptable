@@ -16,7 +16,7 @@
       "settings": [
         {
           "id": "body_xpnc",
-          "name": "Body",
+          "name": "xpnc",
           "val": "",  // 在此处填入实际的环境变量值
           "type": "textarea",
           "desc": "请在此处填写您的环境变量值，每个值之间用换行符分隔。"
