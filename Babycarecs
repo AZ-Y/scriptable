@@ -1,5 +1,5 @@
 const $ = new Env("BC Kid Sign-in");
-const _key = 'Babycare';
+const _key = 'Baby';
 const CK_Val = $.toObj(getEnv(_key));
 $.is_debug = 'true--';
 $.messages = [];
