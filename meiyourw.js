@@ -21,7 +21,7 @@ async function main() {
     for (const item of meiyou) {
         const authorization = item.authorization;
         console.log(`开始签到，authorization: ${authorization}`);
-        let sign = await commonPost('https://coin-api.youzibuy.com/checkin_v3', {}, authorization);
+        let sign = await commonPost('https://coin-api.youzibuy.com/checkin_v3?source=h5&app_id=01&bcTopAccessToken=&channelID=AppStore&isJdInstall=1&isPddInstall=1&isTbInstall=1&isTteInstall=0&lang=zh&mode=3&nonce=nAzBSfBsnQ5R56lS&platform=ios&scale=3.0&themeid=0&timestamp=1720566280&v=8.7.5&v1=8.75.0.0&sign=953d49b239c4057d164af0918714e2c5', {}, authorization);
         console.log(`签到结果: ${JSON.stringify(sign)}`);
         if (sign.code === 200) {
             console.log('签到成功');
