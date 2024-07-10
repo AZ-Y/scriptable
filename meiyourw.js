@@ -3,7 +3,7 @@ const meiyou = ($.isNode() ? JSON.parse(process.env.meiyou) : $.getjson("meiyou"
 let Utils = undefined;
 let notice = '';
 
-!(async () => {
+(async () => {
     if (typeof $request !== "undefined") {
         await getCookie();
     } else {
@@ -32,9 +32,9 @@ async function main() {
             console.log('签到失败:', sign.msg);
             notice += `签到失败: ${sign.msg}\n`;
         }
-    if (notice) {
-        $.msg($.name, '', notice);
     }
+
+    sendMsg(notice);
 }
 
 async function getCookie() {
@@ -84,12 +84,41 @@ async function commonPost(url, body, authorization) {
                 }
             } catch (e) {
                 $.logErr(e, resp);
-            } finally {
                 resolve();
             }
         });
     });
 }
+
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+
+function jsonToQueryString(t = {}) {
+    return Object.keys(t).sort().map(e => `${encodeURIComponent(e)}=${encodeURIComponent(t[e])}`).join("&");
+}
+
+function sendMsg(message) {
+    if (!message) return;
+    try {
+        if ($.isNode()) {
+            let notify;
+            try {
+                notify = require('./sendNotify');
+            } catch (e) {
+                notify = require('./utils/sendNotify');
+            }
+            notify.sendNotify($.name, message);
+        } else {
+            $.msg($.name, '', message);
+        }
+    } catch (e) {
+        $.log(`\n\n-----${$.name}-----\n${message}`);
+    }
+}
+
+// Env class and related methods remain the same
 // Load utilities function (dummy implementation)
 async function loadUtils() {
     // Simulate loading external utilities if needed
