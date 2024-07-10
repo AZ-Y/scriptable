@@ -31,7 +31,7 @@ async function main() {
     for (const item of guoyuejiu) {
         const authorization = item.authorization;
         console.log(`开始签到，authorization: ${authorization}`);
-        let sign = await commonPost('https://member.guoyuejiu.com/api/user/history', {}, authorization);
+        let sign = await commonPost('https://member.guoyuejiu.com/api/sign/daily/sign', {}, authorization);
         console.log(`签到结果: ${JSON.stringify(sign)}`);
         if (sign.code === 200) {
             console.log('签到成功');
