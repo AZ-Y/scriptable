@@ -21,6 +21,8 @@ async function main() {
     for (const item of meiyou) {
         const authorization = item.authorization;
         console.log(`开始签到，authorization: ${authorization}`);
+        
+        // 签到接口
         let sign = await commonPost('https://coin-api.youzibuy.com/checkin_v3?source=h5&app_id=01&bcTopAccessToken=&channelID=AppStore&isJdInstall=1&isPddInstall=1&isTbInstall=1&isTteInstall=0&lang=zh&mode=3&nonce=nAzBSfBsnQ5R56lS&platform=ios&scale=3.0&themeid=0&timestamp=1720566280&v=8.7.5&v1=8.75.0.0&sign=953d49b239c4057d164af0918714e2c5', {}, authorization);
         console.log(`签到结果: ${JSON.stringify(sign)}`);
         if (sign.code === 200) {
@@ -29,6 +31,50 @@ async function main() {
         } else {
             console.log('签到失败:', sign.msg);
             notice += `签到失败: ${sign.msg}\n`;
+        }
+
+        // 浏览任务
+        let browse = await commonPost('https://coin-api.youzibuy.com/api/member_task/receive?app_id=01&bcTopAccessToken=&channelID=AppStore&isJdInstall=1&isPddInstall=1&isTbInstall=1&isTteInstall=0&lang=zh&mode=3&nonce=KciZmRAt4LLrztGF&platform=ios&scale=3.0&themeid=0&timestamp=1720566297&v=8.7.5&v1=8.75.0.0&sign=ba221529f9ab5899f596ec949ad75459', {}, authorization);
+        console.log(`浏览任务结果: ${JSON.stringify(browse)}`);
+        if (browse.code === 200) {
+            console.log('浏览任务成功');
+            notice += '浏览任务成功\n';
+        } else {
+            console.log('浏览任务失败:', browse.msg);
+            notice += `浏览任务失败: ${browse.msg}\n`;
+        }
+
+        // 逛一逛任务
+        let walk = await commonPost('https://coin-api.youzibuy.com/api/member_task/receive?app_id=01&bcTopAccessToken=&channelID=AppStore&isJdInstall=1&isPddInstall=1&isTbInstall=1&isTteInstall=0&lang=zh&mode=3&nonce=RiaiOtv5BIeuP50S&platform=ios&scale=3.0&themeid=0&timestamp=1720566321&v=8.7.5&v1=8.75.0.0&sign=5f362a85fed9ac070983180b2396795b', {}, authorization);
+        console.log(`逛一逛任务结果: ${JSON.stringify(walk)}`);
+        if (walk.code === 200) {
+            console.log('逛一逛任务成功');
+            notice += '逛一逛任务成功\n';
+        } else {
+            console.log('逛一逛任务失败:', walk.msg);
+            notice += `逛一逛任务失败: ${walk.msg}\n`;
+        }
+
+        // 看首页推荐任务
+        let homePage = await commonPost('https://coin-api.youzibuy.com/api/member_task/receive?app_id=01&bcTopAccessToken=&channelID=AppStore&isJdInstall=1&isPddInstall=1&isTbInstall=1&isTteInstall=0&lang=zh&mode=3&nonce=W7XQQcRvHfVcXQgA&platform=ios&scale=3.0&themeid=0&timestamp=1720566347&v=8.7.5&v1=8.75.0.0&sign=8909d0b47b73790399876189d22c98ff', {}, authorization);
+        console.log(`看首页推荐任务结果: ${JSON.stringify(homePage)}`);
+        if (homePage.code === 200) {
+            console.log('看首页推荐任务成功');
+            notice += '看首页推荐任务成功\n';
+        } else {
+            console.log('看首页推荐任务失败:', homePage.msg);
+            notice += `看首页推荐任务失败: ${homePage.msg}\n`;
+        }
+
+        // 领取饿了么红包任务
+        let elemeCoupon = await commonPost('https://coin-api.youzibuy.com/api/member_task/receive?app_id=01&bcTopAccessToken=&channelID=AppStore&isJdInstall=1&isPddInstall=1&isTbInstall=1&isTteInstall=0&lang=zh&mode=3&nonce=KAdImGyDdCHTl1pr&platform=ios&scale=3.0&themeid=0&timestamp=1720566389&v=8.7.5&v1=8.75.0.0&sign=3b1aad5b779005760dc63b7fd2bf7db9', {}, authorization);
+        console.log(`领取饿了么红包任务结果: ${JSON.stringify(elemeCoupon)}`);
+        if (elemeCoupon.code === 200) {
+            console.log('领取饿了么红包任务成功');
+            notice += '领取饿了么红包任务成功\n';
+        } else {
+            console.log('领取饿了么红包任务失败:', elemeCoupon.msg);
+            notice += `领取饿了么红包任务失败: ${elemeCoupon.msg}\n`;
         }
     }
     if (notice) {
@@ -89,7 +135,6 @@ async function commonPost(url, body, authorization) {
         });
     });
 }
-
 // Load utilities function (dummy implementation)
 async function loadUtils() {
     // Simulate loading external utilities if needed
