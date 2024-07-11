@@ -31,7 +31,7 @@ const Notify = 1; // 用于控制通知开关
 let msg = ""; // 用于存储通知信息
 
 // 定义环境变量名称
-const ENV_NAME = 'gljj';
+const ENV_NAME = 'guoyuejiu';
 // 获取环境变量
 const env = $.getdata(ENV_NAME) || '';
 
