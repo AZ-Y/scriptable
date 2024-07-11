@@ -1,44 +1,42 @@
-// jyjrw.js
+const $ = new Env('劲友家签到');
+const jingyoujia = ($.isNode() ? JSON.parse(process.env.jingyoujia) : $.getjson("jingyoujia")) || [];
+let Utils = undefined;
+let notice = '';
 
-const cookieName = '劲友家';
-const cookieKey = 'cookie_jingyoujia';
-const bodyKey = 'body_jingyoujia';
-
-// 获取cookie部分
-if ($request && $request.method !== 'OPTIONS') {
-  const cookie = $request.headers['Cookie'];
-  if (cookie) {
-    const saved = $prefs.setValueForKey(cookie, cookieKey);
-    if (saved) {
-      $notify(cookieName, '获取Cookie成功', '');
+(async () => {
+    if (typeof $request !== "undefined") {
+        await getCookie();
     } else {
-      $notify(cookieName, '获取Cookie失败', '');
+        await main();
     }
-  }
-  $done({});
-} else {
-  // 签到任务部分
-  const url = 'https://jjw.jingjiu.com/app-jingyoujia/app/jingyoujia/taskContinuousRecord';
-  const headers = {
-    'Cookie': $prefs.valueForKey(cookieKey),
-  };
+})().catch((e) => {
+    $.log(e);
+}).finally(() => {
+    $.done({});
+});
 
-  const myRequest = {
-    url: url,
-    headers: headers,
-  };
+async function main() {
+    console.log('劲友家签到开始');
+    Utils = await loadUtils();
+    for (const item of jingyoujia) {
+        const authorization = item.authorization;
+        console.log(`开始签到，authorization: ${authorization}`);
+        
+        // 签到接口
+        let sign = await commonPost('https://jjw.jingjiu.com/app-jingyoujia/app/jingyoujia/taskContinuousRecord', {}, authorization);
+        console.log(`签到结果: ${JSON.stringify(sign)}`);
+        if (sign.code === 200) {
+            console.log('签到成功');
+            notice += '签到成功\n';
+        } else {
+            console.log('签到失败:', sign.msg);
+            notice += `签到失败: ${sign.msg}\n`;
+        }
+    }
 
-  $task.fetch(myRequest).then(response => {
-    const result = response.body;
-    console.log('签到结果:', result);
-    $notify(cookieName, '签到成功', result);
-    $done();
-  }, reason => {
-    console.log('签到失败:', reason.error);
-    $notify(cookieName, '签到失败', reason.error);
-    $done();
-  });
+    sendMsg(notice);
 }
+
 async function getCookie() {
     const authorization = $request.headers['Authorization'];
     if (!authorization) {
@@ -46,22 +44,22 @@ async function getCookie() {
         return;
     }
     const newData = { "authorization": authorization };
-    const index = meiyou.findIndex(e => e.authorization === newData.authorization);
+    const index = jingyoujia.findIndex(e => e.authorization === newData.authorization);
     if (index !== -1) {
-        if (meiyou[index].authorization === newData.authorization) {
+        if (jingyoujia[index].authorization === newData.authorization) {
             console.log('Authorization未改变');
             return;
         } else {
-            meiyou[index] = newData;
+            jingyoujia[index] = newData;
             console.log('更新authorization:', newData.authorization);
             $.msg($.name, '更新authorization成功!', '');
         }
     } else {
-        meiyou.push(newData);
+        jingyoujia.push(newData);
         console.log('新增authorization:', newData.authorization);
         $.msg($.name, '新增authorization成功!', '');
     }
-    $.setjson(meiyou, "meiyou");
+    $.setjson(jingyoujia, "jingyoujia");
 }
 
 async function commonPost(url, body, authorization) {
@@ -91,7 +89,97 @@ async function commonPost(url, body, authorization) {
         });
     });
 }
+const $ = new Env('劲友家签到');
+const jingyoujia = ($.isNode() ? JSON.parse(process.env.jingyoujia) : $.getjson("jingyoujia")) || [];
+let Utils = undefined;
+let notice = '';
 
+(async () => {
+    if (typeof $request !== "undefined") {
+        await getCookie();
+    } else {
+        await main();
+    }
+})().catch((e) => {
+    $.log(e);
+}).finally(() => {
+    $.done({});
+});
+
+async function main() {
+    console.log('劲友家签到开始');
+    Utils = await loadUtils();
+    for (const item of jingyoujia) {
+        const authorization = item.authorization;
+        console.log(`开始签到，authorization: ${authorization}`);
+        
+        // 签到接口
+        let sign = await commonPost('https://jjw.jingjiu.com/app-jingyoujia/app/jingyoujia/taskContinuousRecord', {}, authorization);
+        console.log(`签到结果: ${JSON.stringify(sign)}`);
+        if (sign.code === 200) {
+            console.log('签到成功');
+            notice += '签到成功\n';
+        } else {
+            console.log('签到失败:', sign.msg);
+            notice += `签到失败: ${sign.msg}\n`;
+        }
+    }
+
+    sendMsg(notice);
+}
+
+async function getCookie() {
+    const authorization = $request.headers['Authorization'];
+    if (!authorization) {
+        console.log('未找到Authorization头部');
+        return;
+    }
+    const newData = { "authorization": authorization };
+    const index = jingyoujia.findIndex(e => e.authorization === newData.authorization);
+    if (index !== -1) {
+        if (jingyoujia[index].authorization === newData.authorization) {
+            console.log('Authorization未改变');
+            return;
+        } else {
+            jingyoujia[index] = newData;
+            console.log('更新authorization:', newData.authorization);
+            $.msg($.name, '更新authorization成功!', '');
+        }
+    } else {
+        jingyoujia.push(newData);
+        console.log('新增authorization:', newData.authorization);
+        $.msg($.name, '新增authorization成功!', '');
+    }
+    $.setjson(jingyoujia, "jingyoujia");
+}
+
+async function commonPost(url, body, authorization) {
+    return new Promise(resolve => {
+        const options = {
+            url: url,
+            headers: {
+                'content-type': 'application/json',
+                'Authorization': authorization,
+                'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN'
+            },
+            body: JSON.stringify(body)
+        };
+        $.post(options, async (err, resp, data) => {
+            try {
+                if (err) {
+                    console.log(`API请求失败: ${JSON.stringify(err)}`);
+                    console.log(`${$.name} API请求失败，请检查网络重试`);
+                } else {
+                    await $.wait(2000);
+                    resolve(JSON.parse(data));
+                }
+            } catch (e) {
+                $.logErr(e, resp);
+                resolve();
+            }
+        });
+    });
+}
 async function loadUtils() {
     // Simulate loading external utilities if needed
     return {};
