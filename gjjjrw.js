@@ -1,115 +1,98 @@
-const $ = new Env('顾家家居');
-const GJJJ = ($.isNode() ? JSON.parse(process.env.GJJJ) : $.getjson("GJJJ")) || [];
-let token = '';
+const $ = new Env('顾家家居签到');
+const gjjj = ($.isNode() ? JSON.parse(process.env.gjjj) : $.getjson("gjjj")) || [];
+let Utils = undefined;
 let notice = '';
 
-!(async () => {
-    if (typeof $request != "undefined") {
+(async () => {
+    if (typeof $request !== "undefined") {
         await getCookie();
     } else {
         await main();
     }
-})().catch((e) => { $.log(e); }).finally(() => { $.done({}); });
+})().catch((e) => {
+    $.log(e);
+}).finally(() => {
+    $.done({});
+});
 
 async function main() {
-    console.log('作者：@xzxxn777\n频道：https://t.me/xzxxn777\n群组：https://t.me/xzxxn7777\n自用机场推荐：https://xn--diqv0fut7b.com\n');
-
-    for (const item of GJJJ) {
-        id = item.id;
-        token = item.token;
-        console.log(`用户：${id}开始任务`);
-
-        console.log('开始签到');
-        let sign = await commonPost('/club-server/member/insertMemberLogin', {});
-        if (sign.status == 401) {
-            $.msg($.name, `用户：${id}`, `token已过期，请重新获取`);
-            continue;
-        }
-        if (sign.code == 200) {
-            console.log(`签到成功，${sign.data.message}`);
+    console.log('顾家家居签到开始');
+    Utils = await loadUtils();
+    for (const item of gjjj) {
+        const authorization = item.authorization;
+        console.log(`开始签到，authorization: ${authorization}`);
+        
+        // 签到接口
+        let sign = await commonPost('https://mc.kukahome.com/club-server/member/insertMemberLogin', {}, authorization);
+        console.log(`签到结果: ${JSON.stringify(sign)}`);
+        if (sign.code === 200) {
+            console.log('签到成功');
+            notice += '签到成功\n';
         } else {
-            console.log(sign.msg);
+            console.log('签到失败:', sign.msg);
+            notice += `签到失败: ${sign.msg}\n`;
         }
-
-        console.log("————————————");
-        console.log("查询积分");
-        let info = await commonPost('/club-server/member/getMemberInfo', {});
-        console.log(`拥有积分：${info.data.currentPoints}\n`);
-        notice += `用户：${id} 拥有积分: ${info.data.currentPoints}\n`;
     }
 
-    if (notice) {
-        $.msg($.name, '', notice);
-    }
+    sendMsg(notice);
 }
 
 async function getCookie() {
-    const token = $request.headers["Authorization"] || $request.headers["authorization"];
-    if (!token) {
+    const authorization = $request.headers['Authorization'];
+    if (!authorization) {
+        console.log('未找到Authorization头部');
         return;
     }
-    const body = $.toObj($response.body);
-    if (!body.data || !body.data.phone) {
-        return;
-    }
-    const appID = $request.headers["HH-APP"];
-    if (appID != 'some-app-id') { // 替换为实际的appID
-        return;
-    }
-    const id = body.data.phone;
-    const newData = {"id": id, "token": token};
-    const index = GJJJ.findIndex(e => e.id == newData.id);
+    const newData = { "authorization": authorization };
+    const index = gjjj.findIndex(e => e.authorization === newData.authorization);
     if (index !== -1) {
-        if (GJJJ[index].token == newData.token) {
+        if (meiyou[index].authorization === newData.authorization) {
+            console.log('Authorization未改变');
             return;
         } else {
-            GJJJ[index] = newData;
-            console.log(newData.token);
-            $.msg($.name, `🎉用户${newData.id}更新token成功!`, ``);
+            gjjj[index] = newData;
+            console.log('更新authorization:', newData.authorization);
+            $.msg($.name, '更新authorization成功!', '');
         }
     } else {
-        GJJJ.push(newData);
-        console.log(newData.token);
-        $.msg($.name, `🎉新增用户${newData.id}成功!`, ``);
+        meiyou.push(newData);
+        console.log('新增authorization:', newData.authorization);
+        $.msg($.name, '新增authorization成功!', '');
     }
-    $.setjson(GJJJ, "GJJJ");
+    $.setjson(meiyou, "gjjj");
 }
 
-async function commonPost(url, body) {
+async function commonPost(url, body, authorization) {
     return new Promise(resolve => {
         const options = {
-            url: `https://mc.kukahome.com${url}`,
+            url: url,
             headers: {
-                'Connection': 'keep-alive',
-                'Content-Type': 'application/json',
-                'Authorization': token,
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36',
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Accept-Language': 'zh-CN,zh;q=0.9'
+                'content-type': 'application/json',
+                'Authorization': authorization,
+                'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN'
             },
             body: JSON.stringify(body)
         };
         $.post(options, async (err, resp, data) => {
             try {
                 if (err) {
-                    if (data) {
-                        resolve(JSON.parse(data));
-                    } else {
-                        console.log(`${JSON.stringify(err)}`);
-                        console.log(`${$.name} API请求失败，请检查网络重试`);
-                    }
+                    console.log(`API请求失败: ${JSON.stringify(err)}`);
+                    console.log(`${$.name} API请求失败，请检查网络重试`);
                 } else {
                     await $.wait(2000);
                     resolve(JSON.parse(data));
                 }
             } catch (e) {
                 $.logErr(e, resp);
-            } finally {
                 resolve();
             }
         });
     });
+}
+
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
 }
 
 function jsonToQueryString(t = {}) {
@@ -135,7 +118,12 @@ function sendMsg(message) {
     }
 }
 
-
+// Env class and related methods remain the same
+// Load utilities function (dummy implementation)
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
 //加载 crypto-js
 async function intCryptoJS() {
     function Eval_Crypto(script_str) {
