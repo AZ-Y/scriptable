@@ -29,6 +29,7 @@ async function main() {
 
     await doSignTask();
     await doLikeTask();
+    await doCollectTask();
 }
 
 async function doSignTask() {
@@ -111,32 +112,81 @@ async function doLikeTask() {
     $.msg($.name, notice, "");
 }
 
-async function loadUtils() {
-    // Simulate loading external utilities if needed
-    return {};
-}
+async function doCollectTask() {
+    const url = `https://mc.kukahome.com/club-server/front/foot/point/insertFootPoint`;
+    const method = `POST`;
+    const headers = {
+        'appid': `667516`,
+        'content-type': `application/json`,
+        'Connection': `keep-alive`,
+        'AccessToken': token,
+        'parameterSign': `c73bfa3810fc4d7ce87d7145ee6a03fd`,
+        'timestamp': `1720712704474`,
+        'sign': `cc3401290dfdb2237225abd8dd3fd2b6`,
+        'E-Opera': ``,
+        'Accept-Encoding': `gzip,compress,br,deflate`,
+        'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x1800322e) NetType/4G Language/zh_CN`,
+        'X-Customer': `5227043`,
+        'Host': `mc.kukahome.com`,
+        'brandCode': `K001`,
+        'Referer': `https://servicewechat.com/wx0770280d160f09fe/196/page-frame.html`
+    };
+    const body = `{"brandCode":"K001","buriedPointLogo":"do_collect_btn","subordinateTerminal":"会员小程序","businessName":"","businessCode":"","currentPageLink":""}`;
 
-function jsonToQueryString(t = {}) {
-    return Object.keys(t).sort().map(e => `${encodeURIComponent(e)}=${encodeURIComponent(t[e])}`).join("&");
-}
+    const myRequest = {
+        url: url,
+        method: method,
+        headers: headers,
+        body: body
+    };
 
-function sendMsg(message) {
-    if (!message) return;
-    try {
-        if ($.isNode()) {
-            let notify;
-            try {
-                notify = require('./sendNotify');
-            } catch (e) {
-                notify = require('./utils/sendNotify');
-            }
-            notify.sendNotify($.name, message);
-        } else {
-            $.msg($.name, '', message);
-        }
-    } catch (e) {
-        $.log(`\n\n-----${$.name}-----\n${message}`);
+    $.log(`开始执行收藏任务`);
+    const response = await $.http.post(myRequest);
+    const result = JSON.parse(response.body);
+
+    if (result.code === 200) {
+        notice += `收藏成功\n`;
+    } else {
+        notice += `收藏失败：${result.message}\n`;
     }
+    $.msg($.name, notice, "");
+}
+
+// Env环境封装
+function Env(name) {
+    const isNode = typeof require != 'undefined';
+    const isQuanX = typeof $task != 'undefined';
+    const isSurge = typeof $httpClient != 'undefined' && !isQuanX;
+    const isJSBox = typeof $jsbox != 'undefined';
+
+    this.name = name;
+    this.isNode = () => isNode;
+    this.isQuanX = () => isQuanX;
+    this.isSurge = () => isSurge;
+    this.isJSBox = () => isJSBox;
+    this.log = (...log) => console.log(...log);
+    this.msg = (title, subt, desc) => isQuanX ? $notify(title, subt, desc) : isSurge ? $notification.post(title, subt, desc) : console.log(`${title}\n${subt}\n${desc}`);
+    this.getjson = key => isQuanX ? $prefs.valueForKey(key) : isSurge ? $persistentStore.read(key) : null;
+    this.setdata = (val, key) => isQuanX ? $prefs.setValueForKey(val, key) : isSurge ? $persistentStore.write(val, key) : null;
+    this.http = {
+        post: async (options) => {
+            if (isQuanX) {
+                return new Promise((resolve, reject) => {
+                    $task.fetch(options).then(response => {
+                        resolve({ statusCode: response.statusCode, body: response.body });
+                    }, reason => reject(reason));
+                });
+            } else if (isNode) {
+                const request = require('request');
+                return new Promise((resolve, reject) => {
+                    request.post(options, (error, response, body) => {
+                        if (error) reject(error);
+                        else resolve({ statusCode: response.statusCode, body: body });
+                    });
+                });
+            }
+        }
+    };
 }
 
 // Env class and related methods remain the same
