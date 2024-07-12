@@ -1,93 +1,114 @@
-const $ = new Env('顾家家居签到');
-const gjjj = ($.isNode() ? JSON.parse(process.env.gjjj) : $.getjson("gjjj")) || [];
-let Utils = undefined;
+const $ = new Env('顾家家居');
+const GJJJ = ($.isNode() ? JSON.parse(process.env.GJJJ) : $.getjson("GJJJ")) || [];
+let token = '';
 let notice = '';
 
-(async () => {
-    if (typeof $request !== "undefined") {
+!(async () => {
+    if (typeof $request != "undefined") {
         await getCookie();
     } else {
         await main();
     }
-})().catch((e) => {
-    $.log(e);
-}).finally(() => {
-    $.done({});
-});
-
-async function main() {
-    console.log('顾家家居签到开始');
-    Utils = await loadUtils();
-    for (const item of gjjj) {
-        const authorization = item.authorization;
-        console.log(`开始签到，authorization: ${authorization}`);
-        
-        // 签到接口
-        let sign = await commonPost('https://mc.kukahome.com/club-server/member/insertMemberLogin', {}, authorization);
-        console.log(`签到结果: ${JSON.stringify(sign)}`);
-        if (sign.code === 200) {
-            console.log('签到成功');
-            notice += '签到成功\n';
-        } else {
-            console.log('签到失败:', sign.msg);
-            notice += `签到失败: ${sign.msg}\n`;
-        }
-    }
-
-    sendMsg(notice);
-}
+})().catch((e) => { $.log(e); }).finally(() => { $.done({}); });
 
 async function getCookie() {
-    const authorization = $request.headers['Authorization'];
-    if (!authorization) {
-        console.log('未找到Authorization头部');
-        return;
+    const cookie = $request.headers['AccessToken'];
+    if (cookie) {
+        $.log(`获取Cookie成功：${cookie}`);
+        $.setdata(cookie, "GJJJ_AccessToken");
+        $.msg($.name, `获取Cookie成功`, "");
     }
-    const newData = { "authorization": authorization };
-    const index = gjjj.findIndex(e => e.authorization === newData.authorization);
-    if (index !== -1) {
-        if (gjjj[index].authorization === newData.authorization) {
-            console.log('Authorization未改变');
-            return;
-        } else {
-            gjjj[index] = newData;
-            console.log('更新authorization:', newData.authorization);
-            $.msg($.name, '更新authorization成功!', '');
-        }
-    } else {
-        gjjj.push(newData);
-        console.log('新增authorization:', newData.authorization);
-        $.msg($.name, '新增authorization成功!', '');
-    }
-    $.setjson(gjjj, "gjjj");
 }
 
-async function commonPost(url, body, authorization) {
-    return new Promise(resolve => {
-        const options = {
-            url: url,
-            headers: {
-                'content-type': 'application/json',
-                'Authorization': authorization,
-                'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN'
-            },
-            body: JSON.stringify(body)
-        };
-        $.post(options, async (err, resp, data) => {
-            try {
-                if (err) {
-                    console.log(`API请求失败: ${JSON.stringify(err)}`);
-                    console.log(`${$.name} API请求失败，请检查网络重试`);
-                } else {
-                    await $.wait(2000);
-                    resolve(JSON.parse(data));
-                }
-            } catch (e) {
-                $.logErr(e, resp);
-                resolve();
-            }
-        });
-    });
+async function main() {
+    token = $.getdata("GJJJ_AccessToken");
+    if (!token) {
+        $.msg($.name, '执行失败', '未获取到AccessToken');
+        return;
+    }
+
+    await doSignTask();
+    await doLikeTask();
+}
+
+async function doSignTask() {
+    const url = `https://mc.kukahome.com/club-server/front/foot/point/insertFootPoint`;
+    const method = `POST`;
+    const headers = {
+        'appid': `667516`,
+        'content-type': `application/json`,
+        'Connection': `keep-alive`,
+        'AccessToken': token,
+        'parameterSign': `c73bfa3810fc4d7ce87d7145ee6a03fd`,
+        'timestamp': `1720712704474`,
+        'sign': `cc3401290dfdb2237225abd8dd3fd2b6`,
+        'E-Opera': ``,
+        'Accept-Encoding': `gzip,compress,br,deflate`,
+        'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x1800322e) NetType/4G Language/zh_CN`,
+        'X-Customer': `5227043`,
+        'Host': `mc.kukahome.com`,
+        'brandCode': `K001`,
+        'Referer': `https://servicewechat.com/wx0770280d160f09fe/196/page-frame.html`
+    };
+    const body = `{"brandCode":"K001","buriedPointLogo":"do_collect_btn","subordinateTerminal":"会员小程序","businessName":"","businessCode":"","currentPageLink":""}`;
+
+    const myRequest = {
+        url: url,
+        method: method,
+        headers: headers,
+        body: body
+    };
+
+    $.log(`开始执行签到任务`);
+    const response = await $.http.post(myRequest);
+    const result = JSON.parse(response.body);
+
+    if (result.code === 200) {
+        notice += `签到成功：${result.data.signCount}次\n`;
+    } else {
+        notice += `签到失败：${result.message}\n`;
+    }
+    $.msg($.name, notice, "");
+}
+
+async function doLikeTask() {
+    const url = `https://mc.kukahome.com/club-server/front/member/pushEvent`;
+    const method = `POST`;
+    const headers = {
+        'appid': `667516`,
+        'content-type': `application/json`,
+        'Connection': `keep-alive`,
+        'AccessToken': token,
+        'parameterSign': `45c121d255eb9aeddbc8b15c7cf88175`,
+        'timestamp': `1720712703722`,
+        'sign': `b4be966644c4deafa307f6fa82b072cc`,
+        'E-Opera': ``,
+        'Accept-Encoding': `gzip,compress,br,deflate`,
+        'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x1800322e) NetType/4G Language/zh_CN`,
+        'X-Customer': `5227043`,
+        'Host': `mc.kukahome.com`,
+        'brandCode': `K001`,
+        'Referer': `https://servicewechat.com/wx0770280d160f09fe/196/page-frame.html`
+    };
+    const body = `{"eventId":"c_showhome_like","content":"晒家-点赞","targetId":"300001","targetName":"晒家-点赞","businessId":"52186","businessName":"实物简单大方，非常有质感！这次购买也是朋友推荐！"}`;
+
+    const myRequest = {
+        url: url,
+        method: method,
+        headers: headers,
+        body: body
+    };
+
+    $.log(`开始执行点赞任务`);
+    const response = await $.http.post(myRequest);
+    const result = JSON.parse(response.body);
+
+    if (result.code === 200) {
+        notice += `点赞成功\n`;
+    } else {
+        notice += `点赞失败：${result.message}\n`;
+    }
+    $.msg($.name, notice, "");
 }
 
 async function loadUtils() {
