@@ -1,109 +1,146 @@
-const $ = new Env('顾家家居');
+// 定义常量
+const APP_NAME = "顾家家居小程序";
 
-// 配置信息，可以根据需要进行修改
-const config = {
-    baseURL: 'https://mc.kukahome.com',
-    commonHeaders: {
-        'appid': '667516',
-        'content-type': 'application/json',
-        'Connection': 'keep-alive',
-        'Accept-Encoding': 'gzip,compress,br,deflate',
-        'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x1800322e) NetType/4G Language/zh_CN`,
-        'brandCode': 'K001',
-    },
-    tasks: {
-        doSign: {
-            endpoint: '/club-server/front/foot/point/insertFootPoint',
-            method: 'POST',
-            body: JSON.stringify({"brandCode":"K001","buriedPointLogo":"do_collect_btn","subordinateTerminal":"会员小程序"}),
-        },
-        doLike: {
-            endpoint: '/club-server/front/member/pushEvent',
-            method: 'POST',
-            body: JSON.stringify({"eventId":"c_showhome_like","content":"晒家-点赞","targetId":"300001","businessId":"52186"}),
-        },
-        doCollect: {
-            endpoint: '/club-server/front/foot/point/insertFootPoint',
-            method: 'POST',
-            body: JSON.stringify({"brandCode":"K001","buriedPointLogo":"do_collect_btn","subordinateTerminal":"会员小程序"}),
-        }
-    }
+// 日志打印函数
+const log = (content) => {
+  $notify(APP_NAME, content);
 };
 
-let token = '';
-let notice = '';
+// 从配置中获取变量
+const getConfigVariable = (variableName) => {
+  const conf = $prefs.valueForKey(variableName);
+  if (conf) {
+    return conf;
+  }
+  log(`未获取到${variableName}变量`);
+  return "";
+};
 
-// 抽象出通用的请求函数
-async function sendRequest(url, method, headers, body) {
-    try {
-        const response = await $.http.post({
-            url: `${config.baseURL}${url}`,
-            method: method,
-            headers: headers,
-            body: body
-        });
-        if (response.statusCode !== 200) {
-            throw new Error(`Request failed with status code: ${response.statusCode}`);
-        }
-        return JSON.parse(response.body);
-    } catch (error) {
-        $.log(`Request failed: ${error.message}`);
-        throw error;
-    }
-}
+// 获取配置中的变量
+const ENV_NAME = getConfigVariable("ENV_NAME");
+const CK_NAME = getConfigVariable("CK_NAME");
 
-// 执行任务的通用函数
-async function executeTask(task) {
-    const headers = {
-        ...config.commonHeaders,
-        'AccessToken': token,
-        // 特定于任务的headers可以在这里添加
+// 解析 CK_NAME 为对象
+const token = {
+  "identityType": "mobile",
+  "identityValue": CK_NAME.split("@")[0],
+  "type2": "wechat-unionid",
+  "value2": "",
+  "source": "顾家小程序",
+  "contentName": "",
+  "openid": CK_NAME.split("@")[1],
+  "unionid": CK_NAME.split("@")[2],
+};
+
+// 发送请求的函数
+const makeRequest = (url, method = "get", headers = {}, data = {}) => {
+  const request = {
+    url: url,
+    method: method,
+    headers: headers,
+  };
+
+  if (method === "post") {
+    request.body = JSON.stringify(data);
+  }
+
+  const response = $task.fetch(request);
+  try {
+    return JSON.parse(response.body);
+  } catch (e) {
+    log(`请求响应解析错误: ${e}`);
+    return null;
+  }
+};
+
+// 自动登录函数
+const automaticLogin = (token) => {
+  log("======= 刷新用户信息 =======");
+  const url = "https://mc.kukahome.com/club-server/member/automaticLogin";
+
+  const response = makeRequest(url, "post", {}, token);
+
+  if (response && response.msg === "成功") {
+    const data = response.data;
+    const AccessToken = data.AccessToken;
+    const membership = data.membership;
+    const point = membership.point;
+    const membershipId = membership.id;
+    const brandCode = membership.brandCode;
+    const mobile = membership.mobile;
+    const oneId = membership.oneId;
+    const memberLevel = membership.memberLevel;
+
+    const newHeaders = {
+      brandCode: brandCode,
+      "X-Customer": membershipId,
+      AccessToken: AccessToken,
     };
 
-    try {
-        const result = await sendRequest(task.endpoint, task.method, headers, task.body);
-        if (result.code === 200) {
-            notice += `${task.method}成功\n`;
-        } else {
-            notice += `任务失败：${result.message}\n`;
-        }
-    } catch (error) {
-        notice += `执行${task.method}任务时发生错误：${error.message}\n`;
-    }
-}
+    return newHeaders;
+  } else {
+    log(`>可能token失效了❌,${JSON.stringify(response)}`);
+    return null;
+  }
+};
 
-!(async () => {
-    if (typeof $request != "undefined") {
-        await getCookie();
+// 签到检查函数
+const checkSign = (headers) => {
+  log("======= 查询签到状态 =======");
+  const url = "https://mc.kukahome.com/club-server/front/member/calendar";
+  const data = {
+    t: parseInt(new Date().getTime() * 1000),
+    membershipId: headers["X-Customer"],
+  };
+
+  const response = makeRequest(url, "post", headers, data);
+
+  if (response) {
+    const isTodaySigned = response.isTodaySigned;
+    if (!isTodaySigned) {
+      log(">今日未签到");
+      // 此处添加签到函数调用
     } else {
-        await main();
+      log(">今日已签到✅");
     }
-    $.done({});
-})();
+  } else {
+    log(`>可能token失效了❌,${JSON.stringify(response)}`);
+  }
+};
 
-async function getCookie() {
-    const cookie = $request.headers['AccessToken'];
-    if (cookie) {
-        $.log(`获取Cookie成功：${cookie}`);
-        $.setdata(cookie, "GJJJ_AccessToken");
-    }
-}
+// 主函数
+const main = () => {
+  log(`
+✨✨✨ ${APP_NAME}签到✨✨✨
+✨ 功能：
+      积分签到
+      社区互动
+✨ 抓包步骤：
+      打开${APP_NAME}
+      授权登陆
+      打开抓包工具
+      找相关接口返回值[${CK_NAME}]
+参数示例：3ee9ceccccscscscscscscsc
+✨ ✨✨wxpusher一对一推送功能，
+  ✨需要定义变量export WXPUSHER=wxpusher的app_token，不设置则不启用wxpusher一对一推送
+  ✨需要在${ENV_NAME}变量最后添加@wxpusher的UID
+✨ 设置青龙变量：
+export ${ENV_NAME}='${CK_NAME}参数值'多账号#或&分割
+export SCRIPT_UPDATE = 'False' 关闭脚本自动更新，默认开启
+✨ ✨ 注意：抓完CK没事儿别打开小程序，重新打开小程序请重新抓包
+✨ 推荐cron：1 9 * * *
+✨✨✨ @Author CHERWIN✨✨✨
+  `);
 
-async function main() {
-    token = $.getdata("GJJJ_AccessToken");
-    if (!token) {
-        $.msg($.name, '执行失败', '未获取到AccessToken');
-        return;
-    }
+  const headers = automaticLogin(token);
+  if (headers) {
+    checkSign(headers);
+  }
 
-    const tasks = Object.keys(config.tasks).map(key => config.tasks[key]);
-    for (const task of tasks) {
-        await executeTask(task);
-    }
+  log("脚本执行结束");
+};
 
-    $.msg($.name, '任务执行结果', notice);
-}
-
+main();
 // Env环境封装保持不变
 // ...
 /** ---------------------------------固定不动区域----------------------------------------- */
