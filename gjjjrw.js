@@ -1,58 +1,122 @@
 const $ = new Env('顾家家居');
-const cookieName = 'kukahome';
-const kukahomeCookie = $.isNode() ? process.env[cookieName] : $.getdata(cookieName);
+const meiyou = ($.isNode() ? JSON.parse(process.env.kukahome) : $.getjson("kukahome")) || [];
+let Utils = undefined;
+let notice = '';
 
-if (typeof $request !== 'undefined') {
-    getCookie();
-} else {
-    signIn();
-}
+(async () => {
+    if (typeof $request !== "undefined") {
+        await getCookie();
+    } else {
+        await main();
+    }
+})().catch((e) => {
+    $.log(e);
+}).finally(() => {
+    $.done({});
+});
 
-function getCookie() {
-    if ($request && $request.headers) {
-        const cookie = $request.headers['Cookie'];
-        if (cookie) {
-            $.setdata(cookie, cookieName);
-            $.msg($.name, '获取Cookie成功', '');
+async function main() {
+    console.log('顾家家居签到开始');
+    Utils = await loadUtils();
+    for (const item of kukahome) {
+        const authorization = item.authorization;
+        console.log(`开始签到，authorization: ${authorization}`);
+        
+        // 签到接口
+        let sign = await commonPost('https://mc.kukahome.com/club-server/member/insertMemberLogin', {}, authorization);
+        console.log(`签到结果: ${JSON.stringify(sign)}`);
+        if (sign.code === 200) {
+            console.log('签到成功');
+            notice += '签到成功\n';
+        } else {
+            console.log('签到失败:', sign.msg);
+            notice += `签到失败: ${sign.msg}\n`;
         }
     }
-    $.done();
+
+    sendMsg(notice);
 }
 
-function signIn() {
-    if (!kukahomeCookie) {
-        $.msg($.name, '签到失败', '未获取到Cookie');
-        return $.done();
+async function getCookie() {
+    const authorization = $request.headers['Authorization'];
+    if (!authorization) {
+        console.log('未找到Authorization头部');
+        return;
     }
+    const newData = { "authorization": authorization };
+    const index = kukahome.findIndex(e => e.authorization === newData.authorization);
+    if (index !== -1) {
+        if (kukahome[index].authorization === newData.authorization) {
+            console.log('Authorization未改变');
+            return;
+        } else {
+            kukahome[index] = newData;
+            console.log('更新authorization:', newData.authorization);
+            $.msg($.name, '更新authorization成功!', '');
+        }
+    } else {
+        kukahome.push(newData);
+        console.log('新增authorization:', newData.authorization);
+        $.msg($.name, '新增authorization成功!', '');
+    }
+    $.setjson(meiyou, "meiyou");
+}
 
-    const url = 'https://mc.kukahome.com/club-server/member/signIn';
-    const headers = {
-        'Cookie': kukahomeCookie,
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN'
-    };
-
-    $.post({url, headers}, (err, resp, data) => {
-        try {
-            if (err) {
-                $.logErr(err);
-                $.msg($.name, '签到失败', '请求错误');
-            } else {
-                const result = JSON.parse(data);
-                if (result && result.code === 200) {
-                    $.msg($.name, '签到成功', result.message);
+async function commonPost(url, body, authorization) {
+    return new Promise(resolve => {
+        const options = {
+            url: url,
+            headers: {
+                'content-type': 'application/json',
+                'Authorization': authorization,
+                'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003137) NetType/4G Language/zh_CN'
+            },
+            body: JSON.stringify(body)
+        };
+        $.post(options, async (err, resp, data) => {
+            try {
+                if (err) {
+                    console.log(`API请求失败: ${JSON.stringify(err)}`);
+                    console.log(`${$.name} API请求失败，请检查网络重试`);
                 } else {
-                    $.msg($.name, '签到失败', result.message || '未知错误');
+                    await $.wait(2000);
+                    resolve(JSON.parse(data));
                 }
+            } catch (e) {
+                $.logErr(e, resp);
+                resolve();
             }
-        } catch (e) {
-            $.logErr(e);
-            $.msg($.name, '签到失败', '解析响应错误');
-        } finally {
-            $.done();
-        }
+        });
     });
 }
 
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+
+function jsonToQueryString(t = {}) {
+    return Object.keys(t).sort().map(e => `${encodeURIComponent(e)}=${encodeURIComponent(t[e])}`).join("&");
+}
+
+function sendMsg(message) {
+    if (!message) return;
+    try {
+        if ($.isNode()) {
+            let notify;
+            try {
+                notify = require('./sendNotify');
+            } catch (e) {
+                notify = require('./utils/sendNotify');
+            }
+            notify.sendNotify($.name, message);
+        } else {
+            $.msg($.name, '', message);
+        }
+    } catch (e) {
+        $.log(`\n\n-----${$.name}-----\n${message}`);
+    }
+}
 
 // Env class and related methods remain the same
 // Load utilities function (dummy implementation)
