@@ -152,49 +152,7 @@ async function doCollectTask() {
     $.msg($.name, notice, "");
 }
 
-// Env环境封装
-function Env(name) {
-    const isNode = typeof require != 'undefined';
-    const isQuanX = typeof $task != 'undefined';
-    const isSurge = typeof $httpClient != 'undefined' && !isQuanX;
-    const isJSBox = typeof $jsbox != 'undefined';
 
-    this.name = name;
-    this.isNode = () => isNode;
-    this.isQuanX = () => isQuanX;
-    this.isSurge = () => isSurge;
-    this.isJSBox = () => isJSBox;
-    this.log = (...log) => console.log(...log);
-    this.msg = (title, subt, desc) => isQuanX ? $notify(title, subt, desc) : isSurge ? $notification.post(title, subt, desc) : console.log(`${title}\n${subt}\n${desc}`);
-    this.getjson = key => isQuanX ? $prefs.valueForKey(key) : isSurge ? $persistentStore.read(key) : null;
-    this.setdata = (val, key) => isQuanX ? $prefs.setValueForKey(val, key) : isSurge ? $persistentStore.write(val, key) : null;
-    this.http = {
-        post: async (options) => {
-            if (isQuanX) {
-                return new Promise((resolve, reject) => {
-                    $task.fetch(options).then(response => {
-                        resolve({ statusCode: response.statusCode, body: response.body });
-                    }, reason => reject(reason));
-                });
-            } else if (isNode) {
-                const request = require('request');
-                return new Promise((resolve, reject) => {
-                    request.post(options, (error, response, body) => {
-                        if (error) reject(error);
-                        else resolve({ statusCode: response.statusCode, body: body });
-                    });
-                });
-            }
-        }
-    };
-}
-
-// Env class and related methods remain the same
-// Load utilities function (dummy implementation)
-async function loadUtils() {
-    // Simulate loading external utilities if needed
-    return {};
-}
 //加载 crypto-js
 async function intCryptoJS() {
     function Eval_Crypto(script_str) {
