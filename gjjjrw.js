@@ -46,7 +46,7 @@ async function getCookie() {
     const newData = { "authorization": authorization };
     const index = gjjj.findIndex(e => e.authorization === newData.authorization);
     if (index !== -1) {
-        if (meiyou[index].authorization === newData.authorization) {
+        if (gjjj[index].authorization === newData.authorization) {
             console.log('Authorization未改变');
             return;
         } else {
@@ -55,11 +55,11 @@ async function getCookie() {
             $.msg($.name, '更新authorization成功!', '');
         }
     } else {
-        meiyou.push(newData);
+        gjjj.push(newData);
         console.log('新增authorization:', newData.authorization);
         $.msg($.name, '新增authorization成功!', '');
     }
-    $.setjson(meiyou, "gjjj");
+    $.setjson(gjjj, "gjjj");
 }
 
 async function commonPost(url, body, authorization) {
