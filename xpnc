@@ -1,31 +1,202 @@
-#!name=兴攀农场签到
-#!desc=微信公众号搜索兴攀农场订小程序 自动完成签到任务   群组：https://t.me/IPAs_Dd频道：https://t.me/IPAs_share
-#!arguments=定时签到:0 9 * * *,禁用MITM:hostname
-#!arguments-desc=定时签到：自定义Cron表达式，禁用输入 # 。\n\n禁用获取CK，禁用MITM输入 # 。
-#!category=暗夜
+/**
+ * Surge Script for 兴攀农场
+ * Author: Mist
+ * Date: 2024-07-02
+ */
 
-[Script]
-# ====================================
-# ⚠️【免责声明】此脚本改自某位大佬（不知道谁的）
-# 脚本原地址：https://raw.githubusercontent.com/yang7758258/ohhh154/main/xpnc.js
-# ------------------------------------------
-# 1、此脚本仅用于学习研究，不保证其合法性、准确性、有效性，请根据情况自行判断，本人对此不承担任何保证责任。
-# 2、由于此脚本仅用于学习研究，您必须在下载后 24 小时内将所有内容从您的计算机或手机或任何存储设备中完全删除，若违反规定引起任何事件本人对此均不负责。
-# 3、请勿将此脚本用于任何商业或非法目的，若违反规定请自行对此负责。
-# 4、此脚本涉及应用与本人无关，本人对因此引起的任何隐私泄漏或其他后果不承担任何责任。
-# 5、本人对任何脚本引发的问题概不负责，包括但不限于由脚本错误引起的任何损失和损害。
-# 6、如果任何单位或个人认为此脚本可能涉嫌侵犯其权利，应及时通知并提供身份证明，所有权证明，我们将在收到认证文件确认后删除此脚本。
-# 7、所有直接或间接使用、查看此脚本的人均应该仔细阅读此声明。本人保留随时更改或补充此声明的权利。一旦您使用或复制了此脚本，即视为您已接受此免责声明。
-# 使用方法:
-# 1.将签到脚本拉取到本地
-# 2.打开小程序-我的页面 提示获取cookie成功则可以使用该脚本
-# 3.关闭获取cookie脚本，防止产生不必要的mitm
-# （默认凌晨12点 执行，如需更改请自行修改cron表达式）
-# 多账号换行即可
-兴攀农场签到 = type=cron, cronexp="{{{0 0 10,14,16 * * ?}}}", script-path=https://raw.githubusercontent.com/anyehttp/quantumult-x/main/task/xpnc.js,timeout=120,script-update-interval=0
+const env_name = 'xpnc'; // 环境变量名字
+const env = $prefs.valueForKey(env_name) || '';
+const Notify = 1; // 是否通知, 1通知, 0不通知. 默认通知
+const debug = 0; // 是否调试, 1调试, 0不调试. 默认不调试
 
-# 获取Cookie
-兴攀农场Cookie = type=http-request, pattern=^https:\/\/p\.xpfarm\.cn\/treemp\/user\.PersonalCenter\/getInfo, script-path=https://raw.githubusercontent.com/anyehttp/quantumult-x/main/task/xpnc-Cookie.js
+let allTasksSuccessful = true;  // 用于标记所有任务是否成功
 
-[MITM]
-hostname = %APPEND% p.xpfarm.cn
+// 脚本入口函数
+(async () => {
+    if (env === '') {
+        console.log(`没有填写变量,请查看脚本说明: ${env_name}`);
+        return;
+    }
+    let user_ck = env.split('\n');
+    console.log(`\n========== 共找到 ${user_ck.length} 个账号 ==========`);
+    for (let i = 0; i < user_ck.length; i++) {
+        if (!user_ck[i]) continue;
+        let ck_info = user_ck[i].split('&');
+        let authorization = ck_info[0];
+        let user = {
+            index: i + 1,
+            authorization,
+        };
+        allTasksSuccessful = await userTask(user) && allTasksSuccessful;  // 记录每个账号任务的执行结果
+    }
+    if (Notify > 0) {
+        let notificationMessage = allTasksSuccessful? '所有账号任务成功完成' : '有账号任务执行失败';
+        $notify("兴攀农场账号任务结果", notificationMessage);
+    }
+})().catch((e) => console.log(e));
+
+// 账号任务
+async function userTask(user) {
+    console.log(`\n============= 账号[${user.index}]开始任务 =============`);
+    let taskSuccessful = true;  // 用于标记当前账号的任务是否成功
+
+    await Sign(user).catch(() => { taskSuccessful = false; });
+    await wait(1);
+    for (let i = 1; i < 17; i++) {
+        await Task(user, i).catch(() => { taskSuccessful = false; });
+        await wait(1);
+        await Reward(user, i).catch(() => { taskSuccessful = false; });
+        await wait(1);
+    }
+    await Fertilizer(user).catch(() => { taskSuccessful = false; });
+    await wait(1);
+    for (let i = 0; i < 10; i++) {
+        await Water(user).catch(() => { taskSuccessful = false; });
+        await wait(1);
+    }
+    await HomePage(user).catch(() => { taskSuccessful = false; });
+
+    return taskSuccessful;  // 返回当前账号任务的执行结果
+}
+
+// 签到
+async function Sign(user) {
+    let urlObject = {
+        url: `https://p.xpfarm.cn/treemp/user.PersonalCenter/addSignIn`,
+        headers: {
+            'Host': 'p.xpfarm.cn',
+            'Content-Type': 'application/json',
+            'authorization': user.authorization,
+            'user-agent': 'Mozilla/5.0',
+        },
+        body: JSON.stringify({}),
+    };
+    let result = await httpRequest(urlObject);
+    if (result?.code === '1000') {
+        console.log(`🌸账号[${user.index}]🕊签到成功-获得${result.data.reward.integral}积分🎉`);
+    } else {
+        console.log(`🌸账号[${user.index}]签到-状态:${result.message}`);
+    }
+}
+
+// 完成任务
+async function Task(user, id) {
+    let urlObject = {
+        url: `https://p.xpfarm.cn/treemp/tree.Tasks/completeTask`,
+        headers: {
+            'Host': 'p.xpfarm.cn',
+            'Content-Type': 'application/json',
+            'authorization': user.authorization,
+            'user-agent': 'Mozilla/5.0',
+        },
+        body: JSON.stringify({ "task_id": id }),
+    };
+    let result = await httpRequest(urlObject);
+    if (result?.code === '1000') {
+        console.log(`🌸账号[${user.index}]🕊任务${id}完成[${result.message}]🎉`);
+    } else {
+        console.log(`🌸账号[${user.index}]任务${id}完成状态:${result.message}`);
+    }
+}
+
+// 领取奖励
+async function Reward(user, id) {
+    let urlObject = {
+        url: `https://p.xpfarm.cn/treemp/tree.Tasks/receiveTaskReward`,
+        headers: {
+            'Host': 'p.xpfarm.cn',
+            'Content-Type': 'application/json',
+            'authorization': user.authorization,
+            'user-agent': 'Mozilla/5.0',
+        },
+        body: JSON.stringify({ "task_id": id }),
+    };
+    let result = await httpRequest(urlObject);
+    if (result?.code === '1000') {
+        console.log(`🌸账号[${user.index}]🕊任务${id}领取[${result.message}],获得${result.data.reward[0].reward_type_name}${result.data.reward[0].reward}🎉`);
+    } else {
+        console.log(`🌸账号[${user.index}]任务${id}领取状态:${result.message}`);
+    }
+}
+
+// 施肥
+async function Fertilizer(user) {
+    let urlObject = {
+        url: `https://p.xpfarm.cn/treemp/tree.Tasks/addFertilizer`,
+        headers: {
+            'Host': 'p.xpfarm.cn',
+            'Content-Type': 'application/json',
+            'authorization': user.authorization,
+            'user-agent': 'Mozilla/5.0',
+        },
+        body: JSON.stringify({ "type": 1 }),
+    };
+    let result = await httpRequest(urlObject);
+    if (result?.code === '1000') {
+        console.log(`🌸账号[${user.index}]🕊施肥成功,总肥力${result.data.fertilizer}🎉`);
+    } else {
+        console.log(`🌸账号[${user.index}]施肥状态:${result.message}`);
+    }
+}
+
+// 浇水
+async function Water(user) {
+    let urlObject = {
+        url: `https://p.xpfarm.cn/treemp/tree.Tasks/addWater`,
+        headers: {
+            'Host': 'p.xpfarm.cn',
+            'Content-Type': 'application/json',
+            'authorization': user.authorization,
+            'user-agent': 'Mozilla/5.0',
+        },
+        body: JSON.stringify({}),
+    };
+    let result = await httpRequest(urlObject);
+    if (result?.code === '1000') {
+        console.log(`🌸账号[${user.index}]🕊浇水成功，剩余💧[${result.data.water_value} ]肥力[${result.data.fertilizer}]🎉`);
+    } else {
+        console.log(`🌸账号[${user.index}]浇水状态:${result.message}`);
+    }
+}
+
+// 获取首页信息
+async function HomePage(user) {
+    let urlObject = {
+        url: `https://p.xpfarm.cn/treemp/tree.Tasks/getHomePage`,
+        headers: {
+            'Host': 'p.xpfarm.cn',
+            'Content-Type': 'application/json',
+            'authorization': user.authorization,
+            'user-agent': 'Mozilla/5.0',
+        },
+        body: JSON.stringify({}),
+    };
+    let result = await httpRequest(urlObject);
+    if (result?.code === '1000') {
+        console.log(`🌸账号[${user.index}]🕊果树🌳当前状态[${result.data.type_name}]-进度[${result.data.growth_level}]-剩余肥力[${result.data.fertilizer}]-💧[${result.data.water_value}]🎉`);
+    } else {
+        console.log(`🌸账号[${user.index}]查询🔍:${result.message}果树🌳当前状态[${result.data.type_name}]-进度[${result.data.growth_level}]-剩余肥力[${result.data.fertilizer}]-💧[${result.data.water_value}]`);
+    }
+}
+
+// 网络请求函数
+function httpRequest(options) {
+    return new Promise((resolve) => {
+        $task.fetch(options).then((response) => {
+            try {
+                let data = JSON.parse(response.body);
+                resolve(data);
+            } catch (e) {
+                resolve(null);
+            }
+        }, (error) => {
+            console.log(error);
+            resolve(null);
+        });
+    });
+}
+
+// 等待函数
+function wait(n) {
+    return new Promise((resolve) => setTimeout(resolve, n * 1000));
+}
