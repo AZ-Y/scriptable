@@ -45,16 +45,23 @@ class UserInfo {
     async signin() {
         try {
             const options = {
-                //签到任务调用签到接口
                 url: `https://program.springcocoon.com/szbay/api/services/app/SignInRecord/SignInAsync`,
-                //请求头, 所有接口通用
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": this.token
+                    'X-Requested-With': `XMLHttpRequest`,
+                    'Connection': `keep-alive`,
+                    'Accept-Encoding': `gzip, deflate, br`,
+                    'X-XSRF-TOKEN': `whieJP8aJirIcXcOD1fAnnl56nbEipMttpbpGrmo8Q6nFEXaXLchMsX-banBIluBEEe7j58leikalIuWMga8Q0pHWclKEyIS_SSOJbDmR-jrVNXMWQ8FdiyTJRBCJGz-m19W-g2`,
+                    'Content-Type': `application/x-www-form-urlencoded`,
+                    'Origin': `https://program.springcocoon.com`,
+                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003231) NetType/4G Language/zh_CN miniProgram/wx6b10d95e92283e1c`,
+                    'Cookie': `HT.EmpID.1=5c6d3a1a-00b5-4acd-a705-0c7f2df06977; HT.IsTrainer.1=False; HT.PartDisplayName.1=%e6%b7%b1%e5%9c%b3%e6%b9%be%e4%bd%93%e8%82%b2%e4%b8%ad%e5%bf%83; HT.PartID.1=b700c053-71f2-47a6-88a1-6cf50b7cf863; HT.ShopDisplayName.1=%e6%b7%b1%e5%9c%b3%e6%b9%be%e5%b0%8f%e7%a8%8b%e5%ba%8f; HT.ShopID.1=4f195d33-de51-495e-a345-09b23f98ce95; HT.Weixin.AppID.1=wx6b10d95e92283e1c; HT.Weixin.OpenID.1=oH5RL5Dg8bVRcFjHAe9PU40V4Jv0; XSRF-TOKEN=whieJP8aJirIcXcOD1fAnnl56nbEipMttpbpGrmo8Q6nFEXaXLchMsX-banBIluBEEe7j58leikalIuWMga8Q0pHWclKEyIS_SSOJbDmR-jrVNXMWQ8FdiyTJRBCJGz-m19W-g2; __RequestVerificationToken_L3N6YmF50=9mgK1kIGIQ5e6t7-ju00nVR5jXk7uXif68NgHZiAPuvnFbf1aP3CiZYChhDgJPIxx5L9Lls9CYKy3WlFEmJR0LvbLCk1; .AspNet.ApplicationCookie=4zIuITKwTwE450l8G5PN8FMoUWwDF3oeJNt_ccN_oyMtk1jtkmZkO41v-JDqqh7Ou1tSIhZ7pGB7Eow90mpdN4z0ELuZYSY71smGG47KXEcc23AdIzLL_-16iU1GHFDU7j4cyD7KSHMnBab8DsNSEA-JekjuH3MLiCzPkauhZT_4WMLFMGH1rPXfCZrPZFN88ai_KkVVNi79_jujLcku06-2qNHpQRsvOUdf8hnCesyfcl4jBtPrgVurRnAMZzQJe_dSfNpXsrJV8JISksl-v910daSAWTT5PRpcrh1UQMKuMAW1Kh1VqnY2MA9tn_xLCWX93_jZVT-nPxKhc0_Mo3ifkW9upp6SXpOz5HadmolGvBuwkiKkE0fbnV5dcYoA7fJCvOG1mFSXNeL61DZSHszLxrWK-gcJuKjkp8vx87yKMxL82KYYKh4-ZWczQxnBpMM74hyNndHNtMU9kEcTjsYHkIk8-mnAoHxgZ_nXsAyvpnncybh22-fTdmC2fogF6HAe-3yt1ictIy2QPbHGq-2ofXbQLA30RSnXtFL0tQ4ManO-P5gm4osk4wXJLiSJLhG_1y-Wazxrrx9UWMdDEPvSmYkHdxr0JlJOzVXPxxsrhBPy; ASP.NET_SessionId=nfaq534av5nd2rcntj3n1v0f; HT.App.Type.1=10; HT.LoginType.1=20; HT.Weixin.ServiceType.1=30`,
+                    'Referer': `https://program.springcocoon.com/szbay/AppInteract/SignIn/Index?isWeixinRegister=true`,
+                    'Host': `program.springcocoon.com`,
+                    'Accept-Language': `zh-CN,zh-Hans;q=0.9`,
+                    'Accept': `application/json, text/javascript, */*; q=0.01`
                 },
-                body: JSON.stringify({})
+                body: `id=6c3a00f6-b9f0-44a3-b8a0-d5d709de627d&webApiUniqueID=c283f4cd-21f2-f340-a371-3c4e06ceac3d`
             };
-            //post方法
             let result = await httpRequest(options);
             console.log(result)
             if (!result?.error) {
@@ -96,6 +103,7 @@ async function getCookie() {
         await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); //推送Bark通知
     };
 })()
+    
     .catch((e) => $.notifyMsg.push(e.message || e)) //捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
     .finally(async () => {
         await SendMsg($.notifyMsg.join('\n')) //带上总结推送通知
