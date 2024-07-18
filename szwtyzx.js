@@ -1,87 +1,85 @@
 const $ = new Env("深圳湾体育中心签到");
-const ckName = "szbay_tokens";
-const Notify = 1; // 0为关闭通知,1为打开通知,默认为1
+const ckName = "szbay_token";
+//-------------------- 一般不动变量区域 -------------------------------------
+const Notify = 1; //0为关闭通知,1为打开通知,默认为1
 const notify = $.isNode() ? require('./sendNotify') : '';
-let envSplitor = ["@"]; // 多账号分隔符
+let envSplitor = ["@"]; //多账号分隔符
 let userCookie = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
 let userList = [];
 let userIdx = 0;
+let userCount = 0;
+// 为通知准备的空数组
 $.notifyMsg = [];
+//bark推送
 $.barkKey = ($.isNode() ? process.env["bark_key"] : $.getdata("bark_key")) || '';
+//---------------------- 自定义变量区域 -----------------------------------
 
-class UserInfo {
-    constructor(token) {
-        this.index = ++userIdx;
-        this.token = token;
-    }
-
-    async signin() {
-        const options = {
-            url: `https://program.springcocoon.com/szbay/api/services/app/SignInRecord/SignInAsync`,
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Connection': 'keep-alive',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'X-XSRF-TOKEN': 'whieJP8aJirIcXcOD1fAnnl56nbEipMttpbpGrmo8Q6nFEXaXLchMsX-banBIluBEEe7j58leikalIuWMga8Q0pHWclKEyIS_SSOJbDmR-jrVNXMWQ8FdiyTJRBCJGz-m19W-g2',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': 'https://program.springcocoon.com',
-                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003231) NetType/4G Language/zh_CN miniProgram/wx6b10d95e92283e1c',
-                'Cookie': this.token,
-                'Referer': 'https://program.springcocoon.com/szbay/AppInteract/SignIn/Index?isWeixinRegister=true',
-                'Host': 'program.springcocoon.com',
-                'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
-                'Accept': 'application/json, text/javascript, */*; q=0.01'
-            },
-            body: 'id=6c3a00f6-b9f0-44a3-b8a0-d5d709de627d&webApiUniqueID=c283f4cd-21f2-f340-a371-3c4e06ceac3d'
-        };
-
-        let result = await httpRequest(options);
-        if (!result?.error) {
-            log(`✅ 账号${this.index}签到成功！`);
+//脚本入口函数main()
+async function main() {
+    console.log('\n================== 任务 ==================\n');
+    let taskall = [];
+    for (let user of userList) {
+        if (user.ckStatus) {
+            //ck未过期，开始执行任务
+            console.log(`随机延迟${user.getRandomTime()}ms`);
+            taskall.push(await user.signin());
+            await $.wait(user.getRandomTime());
         } else {
-            log(`❌ 账号${this.index}签到失败！${result.error.message}`);
+            //将ck过期消息存入消息数组
+            $.notifyMsg.push(`❌账号${user.index} >> Check ck error!`)
         }
     }
 }
 
-function log(message) {
-    console.log(message);
-    $.notifyMsg.push(message);
-}
-
-function httpRequest(options) {
-    return new Promise((resolve) => {
-        $.get(options, (err, resp, data) => {
-            if (err) {
-                resolve({ error: err });
-            } else {
-                resolve(JSON.parse(data));
-            }
-        });
-    });
-}
-
-async function main() {
-    if (userList.length === 0) return log('❌ 未检测到有效的用户Cookie');
-    for (let user of userList) {
-        await user.signin();
-        await $.wait(randomInt(1000, 3000));
+class UserInfo {
+    constructor(str) {
+        this.index = ++userIdx;
+        this.token = str;
+        this.ckStatus = true;
+        this.drawStatus = true;
     }
-    if ($.barkKey) await notify.sendNotify($.name, $.notifyMsg.join('\n'));
+    getRandomTime() {
+        return randomInt(1000, 3000)
+    }
+    //签到函数
+    async signin() {
+        try {
+            const options = {
+                url: `https://program.springcocoon.com/szbay/api/services/app/SignInRecord/SignInAsync`,
+                headers: {
+                    'X-Requested-With': `XMLHttpRequest`,
+                    'Connection': `keep-alive`,
+                    'Accept-Encoding': `gzip, deflate, br`,
+                    'X-XSRF-TOKEN': `whieJP8aJirIcXcOD1fAnnl56nbEipMttpbpGrmo8Q6nFEXaXLchMsX-banBIluBEEe7j58leikalIuWMga8Q0pHWclKEyIS_SSOJbDmR-jrVNXMWQ8FdiyTJRBCJGz-m19W-g2`,
+                    'Content-Type': `application/x-www-form-urlencoded`,
+                    'Origin': `https://program.springcocoon.com`,
+                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003231) NetType/4G Language/zh_CN miniProgram/wx6b10d95e92283e1c`,
+                    'Cookie': `HT.EmpID.1=5c6d3a1a-00b5-4acd-a705-0c7f2df06977; HT.IsTrainer.1=False; HT.PartDisplayName.1=%e6%b7%b1%e5%9c%b3%e6%b9%be%e4%bd%93%e8%82%b2%e4%b8%ad%e5%bf%83; HT.PartID.1=b700c053-71f2-47a6-88a1-6cf50b7cf863; HT.ShopDisplayName.1=%e6%b7%b1%e5%9c%b3%e6%b9%be%e5%b0%8f%e7%a8%8b%e5%ba%8f; HT.ShopID.1=4f195d33-de51-495e-a345-09b23f98ce95; HT.Weixin.AppID.1=wx6b10d95e92283e1c; HT.Weixin.OpenID.1=oH5RL5Dg8bVRcFjHAe9PU40V4Jv0; XSRF-TOKEN=whieJP8aJirIcXcOD1fAnnl56nbEipMttpbpGrmo8Q6nFEXaXLchMsX-banBIluBEEe7j58leikalIuWMga8Q0pHWclKEyIS_SSOJbDmR-jrVNXMWQ8FdiyTJRBCJGz-m19W-g2; __RequestVerificationToken_L3N6YmF50=9mgK1kIGIQ5e6t7-ju00nVR5jXk7uXif68NgHZiAPuvnFbf1aP3CiZYChhDgJPIxx5L9Lls9CYKy3WlFEmJR0LvbLCk1; .AspNet.ApplicationCookie=4zIuITKwTwE450l8G5PN8FMoUWwDF3oeJNt_ccN_oyMtk1jtkmZkO41v-JDqqh7Ou1tSIhZ7pGB7Eow90mpdN4z0ELuZYSY71smGG47KXEcc23AdIzLL_-16iU1GHFDU7j4cyD7KSHMnBab8DsNSEA-JekjuH3MLiCzPkauhZT_4WMLFMGH1rPXfCZrPZFN88ai_KkVVNi79_jujLcku06-2qNHpQRsvOUdf8hnCesyfcl4jBtPrgVurRnAMZzQJe_dSfNpXsrJV8JISksl-v910daSAWTT5PRpcrh1UQMKuMAW1Kh1VqnY2MA9tn_xLCWX93_jZVT-nPxKhc0_Mo3ifkW9upp6SXpOz5HadmolGvBuwkiKkE0fbnV5dcYoA7fJCvOG1mFSXNeL61DZSHszLxrWK-gcJuKjkp8vx87yKMxL82KYYKh4-ZWczQxnBpMM74hyNndHNtMU9kEcTjsYHkIk8-mnAoHxgZ_nXsAyvpnncybh22-fTdmC2fogF6HAe-3yt1ictIy2QPbHGq-2ofXbQLA30RSnXtFL0tQ4ManO-P5gm4osk4wXJLiSJLhG_1y-Wazxrrx9UWMdDEPvSmYkHdxr0JlJOzVXPxxsrhBPy; ASP.NET_SessionId=nfaq534av5nd2rcntj3n1v0f; HT.App.Type.1=10; HT.LoginType.1=20; HT.Weixin.ServiceType.1=30`,
+                    'Referer': `https://program.springcocoon.com/szbay/AppInteract/SignIn/Index?isWeixinRegister=true`,
+                    'Host': `program.springcocoon.com`,
+                    'Accept-Language': `zh-CN,zh-Hans;q=0.9`,
+                    'Accept': `application/json, text/javascript, */*; q=0.01`
+                },
+                body: `id=6c3a00f6-b9f0-44a3-b8a0-d5d709de627d&webApiUniqueID=c283f4cd-21f2-f340-a371-3c4e06ceac3d`
+            };
+            let result = await httpRequest(options);
+            console.log(result)
+            if (!result?.error) {
+                DoubleLog(`✅签到成功！`)
+            } else {
+                DoubleLog(`❌签到失败! ${result?.error?.message}`)
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    }
 }
-
-function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
+//获取Cookie
 async function getCookie() {
-    if ($request && $request.method !== 'OPTIONS') {
+    if ($request && $request.method != 'OPTIONS') {
         const tokenValue = $request.headers['Authorization'] || $request.headers['authorization'];
         if (tokenValue) {
-            let tokens = ($.getdata(ckName) || '').split(envSplitor[0]).filter(x => x);
-            tokens.push(tokenValue);
-            $.setdata(tokens.join(envSplitor[0]), ckName);
+            $.setdata(tokenValue, ckName);
             $.msg($.name, "", "获取签到Cookie成功🎉");
         } else {
             $.msg($.name, "", "获取签到Cookie失败");
