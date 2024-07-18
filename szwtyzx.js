@@ -77,7 +77,7 @@ class UserInfo {
 //获取Cookie
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['Authorization'] || $request.headers['authorization'];
+        const tokenValue = $request.headers['Cookie'] || $request.headers['Cookie'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
             $.msg($.name, "", "获取签到Cookie成功🎉");
