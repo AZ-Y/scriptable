@@ -1,9 +1,7 @@
-// QuantumultX 签到脚本模板
-// [task_local]
-// 0 8 * * * script-path=example.js, tag=金杜丹小程序
-
-const $ = new Env('金杜丹小程序');
-const ckName = 'JDD';  // 环境变量名字
+// env.js 全局
+const $ = new Env("金杜丹任务");
+const ckName = "jdd_data";
+//-------------------- 一般不动变量区域 -------------------------------------
 const Notify = 1; //0为关闭通知,1为打开通知,默认为1
 const notify = $.isNode() ? require('./sendNotify') : '';
 let envSplitor = ["@"]; //多账号分隔符
@@ -20,12 +18,17 @@ $.barkKey = ($.isNode() ? process.env["bark_key"] : $.getdata("bark_key")) || ''
 //脚本入口函数main()
 async function main() {
     console.log('\n================== 任务 ==================\n');
-    let taskall = [];
     for (let user of userList) {
         if (user.ckStatus) {
             //ck未过期，开始执行任务
             console.log(`随机延迟${user.getRandomTime()}ms`);
-            taskall.push(await user.signin());
+            await user.sign();
+            const article_ids = await user.fetch_ids();
+            const video_ids = await user.fetch_video_ids();
+            await user.read(article_ids);
+            await user.gold(article_ids);
+            await user.Videoviewing(video_ids);
+            await user.VideoRewards(video_ids);
             await $.wait(user.getRandomTime());
         } else {
             //将ck过期消息存入消息数组
@@ -34,25 +37,18 @@ async function main() {
     }
 }
 
-class UserInfo {
+class JDD {
     constructor(str) {
         this.index = ++userIdx;
         this.token = str;
         this.ckStatus = true;
-        this.drawStatus = true;
+        this.headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003231) NetType/4G Language/zh_CN miniProgram/wx70eff0ac6e018724"
+        };
     }
     getRandomTime() {
         return randomInt(1000, 3000);
-    }
-
-const tokens_list = tokens.split('@');
-
-class AC {
-    constructor(token) {
-        this.token = token;
-        this.headers = {
-            'User-Agent': "Mozilla/5.0 (Linux; Android 12; RMX3562 Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/126.0.6478.122 Mobile Safari/537.36 XWEB/1260059 MMWEBSDK/20240501 MMWEBID/2307 MicroMessenger/8.0.50.2701(0x28003253) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64 MiniProgramEnv/android"
-        };
     }
 
     async sign() {
@@ -144,34 +140,15 @@ class AC {
     }
 }
 
-!(async () => {
-    for (let index = 0; index < tokens_list.length; index++) {
-        const token = tokens_list[index];
-        console.log(`=====开始执行第${index + 1}个账号任务=====`);
-        const ac = new AC(token);
-        await ac.sign();
-        const article_ids = await ac.fetch_ids();
-        const video_ids = await ac.fetch_video_ids();
-        await ac.read(article_ids);
-        await ac.gold(article_ids);
-        await ac.Videoviewing(video_ids);
-        await ac.VideoRewards(video_ids);
-    }
-})().catch((e) => {
-    console.log(e);
-}).finally(() => {
-    $.done();
-});
-
 //获取Cookie
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['token'] || $request.headers['token'];
+        const tokenValue = $request.headers['Cookie'] || $request.headers['cookie'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
             $.msg($.name, "", "获取签到Cookie成功🎉");
         } else {
-            $.msg($.name, "", "获取签到Cookie失败");
+            $.msg($.name, "", "错误获取签到Cookie失败");
         }
     }
 }
@@ -192,10 +169,9 @@ async function getCookie() {
         await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); //推送Bark通知
     };
 })()
-    
-    .catch((e) => $.notifyMsg.push(e.message || e)) //捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
+    .catch((e) => $.notifyMsg.push(e.message || e))//捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
     .finally(async () => {
-        await SendMsg($.notifyMsg.join('\n')); //带上总结推送通知
+        await SendMsg($.notifyMsg.join('\n'))//带上总结推送通知
         $.done(); //调用Surge、QX内部特有的函数, 用于退出脚本执行
     });
 
@@ -231,7 +207,7 @@ async function checkEnv() {
                 e = o;
                 break;
             }
-        for (let n of userCookie.split(e)) n && userList.push(new UserInfo(n));
+        for (let n of userCookie.split(e)) n && userList.push(new JDD(n));
         userCount = userList.length;
     } else {
         console.log("未找到CK");
@@ -239,6 +215,8 @@ async function checkEnv() {
     }
     return console.log(`共找到${userCount}个账号`), true;
 }
+
+
 
 /**
  * 随机整数生成
@@ -252,12 +230,12 @@ async function SendMsg(message) {
     if (!message) return;
     if (Notify > 0) {
         if ($.isNode()) {
-            await notify.sendNotify($.name, message);
+            await notify.sendNotify($.name, message)
         } else {
-            $.msg($.name, '', message);
+            $.msg($.name, '', message)
         }
     } else {
-        console.log(message);
+        console.log(message)
     }
 }
 /** ---------------------------------固定不动区域----------------------------------------- */
