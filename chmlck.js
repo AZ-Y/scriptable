@@ -7,4 +7,4 @@
 长虹美菱 = type=cron,cronexp="8 8,16 * * *",script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/chml.js,script-update-interval=0,timeout=3600,wake-system=1,engine=jsc
 
 [MITM]
-hostname = http://hongke.changhong.com
+hostname = hongke.changhong.com
