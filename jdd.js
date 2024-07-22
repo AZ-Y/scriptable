@@ -4,14 +4,46 @@
 
 const $ = new Env('金杜丹小程序');
 const ckName = 'JDD';  // 环境变量名字
+const Notify = 1; //0为关闭通知,1为打开通知,默认为1
+const notify = $.isNode() ? require('./sendNotify') : '';
+let envSplitor = ["@"]; //多账号分隔符
+let userCookie = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
+let userList = [];
+let userIdx = 0;
+let userCount = 0;
+// 为通知准备的空数组
+$.notifyMsg = [];
+//bark推送
+$.barkKey = ($.isNode() ? process.env["bark_key"] : $.getdata("bark_key")) || '';
+//---------------------- 自定义变量区域 -----------------------------------
 
-// 获取环境变量
-let tokens = $.isNode() ? process.env[ckName] : $.getdata(ckName);
-
-if (!tokens) {
-    $.msg($.name, '获取变量失败', '请检查配置是否正确');
-    $.done();
+//脚本入口函数main()
+async function main() {
+    console.log('\n================== 任务 ==================\n');
+    let taskall = [];
+    for (let user of userList) {
+        if (user.ckStatus) {
+            //ck未过期，开始执行任务
+            console.log(`随机延迟${user.getRandomTime()}ms`);
+            taskall.push(await user.signin());
+            await $.wait(user.getRandomTime());
+        } else {
+            //将ck过期消息存入消息数组
+            $.notifyMsg.push(`❌账号${user.index} >> Check ck error!`)
+        }
+    }
 }
+
+class UserInfo {
+    constructor(str) {
+        this.index = ++userIdx;
+        this.token = str;
+        this.ckStatus = true;
+        this.drawStatus = true;
+    }
+    getRandomTime() {
+        return randomInt(1000, 3000);
+    }
 
 const tokens_list = tokens.split('@');
 
