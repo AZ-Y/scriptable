@@ -126,28 +126,17 @@ class JDD {
 })().catch((e) => {$.log(e)}).finally(() => {$.done({});});
 
 async function getCookie() {
-    const token = $request.headers['token'];
-    if (!token) {
-        console.log('未找到token头部');
-        return;
-    }
-    const newData = {"token": token};
-    const index = Changan.findIndex(e => e.token == newData.token);
-    if (index !== -1) {
-        if (Changan[index].token == newData.token) {
-            console.log('token未改变');
-            return;
+    if ($request && $request.method != 'OPTIONS') {
+        const url = $request.url; // 获取请求的URL
+        const tokenValue = url.match(/access_token=([^&#]+)/); // 从URL中提取token参数
+
+        if (tokenValue && tokenValue[1]) {
+            $.setdata(tokenValue[1], "jdd_data"); // 存储token值到Cookie，这里假设Cookie的名称为"ckName"
+            $.msg($.name, "", "获取签到Cookie成功🎉");
         } else {
-            Changan[index] = newData;
-            console.log('更新token:', newData.token);
-            $.msg($.name, '更新token成功!', '');
+            $.msg($.name, "", "错误获取签到Cookie失败");
         }
-    } else {
-        Changan.push(newData);
-        console.log('新增token:', newData.token);
-        $.msg($.name, '新增token成功!', '');
     }
-    $.setjson(Changan, "changan_data");
 }
 
 async function commonPost(url, body, token) {
