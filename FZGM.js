@@ -1,5 +1,5 @@
 // env.js 全局
-const $ = new Env("法治光明打卡任务");
+const $ = new Env("法治光明打卡");
 const ckName = "fzgmdk_data";
 //-------------------- 一般不动变量区域 -------------------------------------
 const Notify = 1; //0为关闭通知,1为打开通知,默认为1
@@ -45,26 +45,28 @@ class UserInfo {
     async signin() {
         try {
             const options = {
+                //签到任务调用签到接口
                 url: `https://activity.sznews.com/money/qmfz2024/index.php?s=index/Activity/dailySign`,
+                //请求头, 所有接口通用
                 headers: {
                     'Connection': 'keep-alive',
                     'Accept-Encoding': 'gzip, deflate, br',
                     'Content-Type': 'application/json',
                     'Origin': 'https://activity.sznews.com',
-                    'x-token': this.token,  // token from constructor
+                    'x-token': this.token,
                     'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN',
-                    'Cookie': 'HMACCOUNT=AFDB9F8A1C380789; Hm_lpvt_992f7f1db592fcd150ff3586dd6ed854=1721717780; Hm_lvt_992f7f1db592fcd150ff3586dd6ed854=1721717190,1721717780',
+                    'Cookie': 'HMACCOUNT=AA3EA5A16F07DE7C; Hm_lpvt_992f7f1db592fcd150ff3586dd6ed854=1721745584; Hm_lvt_992f7f1db592fcd150ff3586dd6ed854=1721745584',
                     'Host': 'activity.sznews.com',
                     'Referer': 'https://activity.sznews.com/front/qmfz2024_front/index.html',
                     'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
                     'Accept': 'application/json, text/plain, */*'
                 },
                 body: JSON.stringify({
-                    "token": this.token,  // token from constructor
-                    "voucher": "f85006ed7664b9769654ca22cfe72983wxdbf3424b38888469"  // update if needed
+                    "token": this.token,
+                    "voucher": "bc8232348639cff6f2f9e989344275a5wxdbf3424b38888469"
                 })
             };
-            // post方法
+            //post方法
             let result = await httpRequest(options);
             console.log(result);
             if (result && result.success) {
@@ -81,7 +83,7 @@ class UserInfo {
 //获取Cookie
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['x-token'] || $request.headers['x-Token'];
+        const tokenValue = $request.headers['x-token'] || $request.headers['X-Token'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
             $.msg($.name, "", "获取签到Cookie成功🎉");
