@@ -49,19 +49,19 @@ class UserInfo {
                 url: `https://wxapi.uni.changan.com.cn/user/signIn`,
                 //请求头, 所有接口通用
                 headers: {
-                    'Accept': `application/json, text/plain, */*`,
-                    'Origin': `https://wxapi.uni.changan.com.cn`,
-                    'Accept-Encoding': `gzip, deflate, br`,
-                    'Cookie': this.token,
-                    'Content-Type': `application/json;charset=utf-8`,
-                    'Host': `wxapi.uni.changan.com.cn`,
-                    'Connection': `keep-alive`,
-                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003231) NetType/4G Language/zh_CN miniProgram/wx70eff0ac6e018724`,
-                    'Referer': `https://wxapi.uni.changan.com.cn`,
-                    'Accept-Language': `zh-CN,zh-Hans;q=0.9`
+                    'Accept-Encoding': 'gzip,compress,br,deflate',
+                    'content-type': 'application/json',
+                    'Connection': 'keep-alive',
+                    'Referer': 'https://servicewechat.com/wxa85ccd055be3cfbc/223/page-frame.html',
+                    'Host': 'wxapi.uni.changan.com.cn',
+                    'codeEncryptedStr': 'UJSmPcxlGbafNTWj4N4Du6zM6jgaT/HNMkR0k3VJ2zijvWUvw9cDjkka4YisR1yYfrq4u0GXm1Cafs07NiyH9uRpZMUfGP8bS6wnyOgXUkWBrSiHx/W90dVUxT0d496cqIplomje9pUvmUuBUmJLNHDE1wY4Q6FfSn92Lg85H90=',
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN',
+                    'token': this.token,
+                    'sign': '740230F9A05C253ACC8CC1B4F51D971F',
+                    'timestamp': '1721726550903'
                 },
                 body: JSON.stringify({
-                    openid: "oTNbpjlzt8X9xSYHx37tJnHdGGXk"
+                    "paramEncryptedStr": "SF6KqQbdNPPwX/dW8pj0Nw=="
                 })
             };
             //post方法
