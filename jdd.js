@@ -140,12 +140,13 @@ class JDD {
     }
 }
 
-//获取Cookie
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['token'] || $request.headers['token'];
-        if (tokenValue) {
-            $.setdata(tokenValue, ckName);
+        const url = $request.url; // 获取请求的URL
+        const tokenValue = url.match(/token=([^&#]+)/); // 从URL中提取token参数
+
+        if (tokenValue && tokenValue[1]) {
+            $.setdata(tokenValue[1], "jdd_data"); // 存储token值到Cookie，这里假设Cookie的名称为"ckName"
             $.msg($.name, "", "获取签到Cookie成功🎉");
         } else {
             $.msg($.name, "", "错误获取签到Cookie失败");
