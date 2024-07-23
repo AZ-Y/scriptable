@@ -143,7 +143,7 @@ class JDD {
 //获取Cookie
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['Cookie'] || $request.headers['cookie'];
+        const tokenValue = $request.headers['token'] || $request.headers['token'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
             $.msg($.name, "", "获取签到Cookie成功🎉");
