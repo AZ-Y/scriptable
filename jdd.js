@@ -139,11 +139,10 @@ class JDD {
         }
     }
 }
-
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
         const url = $request.url; // 获取请求的URL
-        const tokenValue = url.match(/token=([^&#]+)/); // 从URL中提取token参数
+        const tokenValue = url.match(/access_token=([^&#]+)/); // 从URL中提取token参数
 
         if (tokenValue && tokenValue[1]) {
             $.setdata(tokenValue[1], "jdd_data"); // 存储token值到Cookie，这里假设Cookie的名称为"ckName"
@@ -153,6 +152,7 @@ async function getCookie() {
         }
     }
 }
+
 
 //主程序执行入口
 !(async () => {
