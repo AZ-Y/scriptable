@@ -44,6 +44,10 @@ class UserInfo {
     //签到函数
     async signin() {
         try {
+            if (!this.token) {
+                throw new Error("Token is empty");
+            }
+
             const options = {
                 url: `https://hongke.changhong.com/gw/applet/aggr/signin?aggrId=608`,
                 method: 'POST',
@@ -60,27 +64,33 @@ class UserInfo {
                 body: ``
             };
             let result = await httpRequest(options);
-            console.log(result);
-            if (!result?.error) {
+            console.log("签到请求结果:", result);
+            if (result && result.code === "0" && result.message === "签到成功") {
                 DoubleLog(`✅签到成功！`);
+            } else if (result && result.code === "400" && result.message === "已签到") {
+                DoubleLog(`❌今天已经签到过了`);
             } else {
-                DoubleLog(`❌签到失败! ${result?.error?.message}`);
+                DoubleLog(`❌签到失败! ${result ? result.message : "未知错误"}`);
             }
         } catch (e) {
-            console.log(e);
+            console.log("签到请求异常:", e);
+            DoubleLog(`❌签到请求异常: ${e}`);
         }
     }
 }
 
-//获取Cookie
-async function getCookie() {
-    if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['token'] || $request.headers['token'];
-        if (tokenValue) {
-            $.setdata(tokenValue, ckName);
-            $.msg($.name, "", "获取签到Cookie成功🎉");
+async function main() {
+    console.log('\n================== 任务 ==================\n');
+    let taskall = [];
+    for (let user of userList) {
+        if (user.ckStatus) {
+            //ck未过期，开始执行任务
+            console.log(`随机延迟${user.getRandomTime()}ms`);
+            taskall.push(await user.signin());
+            await $.wait(user.getRandomTime());
         } else {
-            $.msg($.name, "", "获取签到Cookie失败");
+            //将ck过期消息存入消息数组
+            $.notifyMsg.push(`❌账号${user.index} >> Check ck error!`)
         }
     }
 }
@@ -101,12 +111,12 @@ async function getCookie() {
         await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); //推送Bark通知
     };
 })()
-    
     .catch((e) => $.notifyMsg.push(e.message || e)) //捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
     .finally(async () => {
         await SendMsg($.notifyMsg.join('\n')); //带上总结推送通知
         $.done(); //调用Surge、QX内部特有的函数, 用于退出脚本执行
     });
+    
 
 /** --------------------------------辅助函数区域------------------------------------------- */
 
