@@ -7,4 +7,4 @@
 七彩虹商城 = type=cron,cronexp="8 8,16 * * *",script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/qchsc.js,script-update-interval=0,timeout=3600,wake-system=1,engine=jsc
 
 [MITM]
-hostname =  hdyx.by-health.com
+hostname =  shopapi.skycolorful.com
