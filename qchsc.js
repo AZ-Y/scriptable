@@ -25,12 +25,12 @@ async function main() {
         // 签到接口
         let sign = await commonPost('https://shopapi.skycolorful.com/api/User/Sign', {}, authorization);
         console.log(`签到结果: ${JSON.stringify(sign)}`);
-        if (sign.statusCode === 200) {
+        if (sign.Code === 0 && sign.Success) {
             console.log('签到成功');
             notice += '签到成功\n';
         } else {
-            console.log('签到失败:', sign.msg);
-            notice += `签到失败: ${sign.msg}\n`;
+            console.log('签到失败:', sign.Message);
+            notice += `签到失败: ${sign.Message}\n`;
         }
     }
 
@@ -105,6 +105,32 @@ async function commonPost(url, body, authorization) {
     });
 }
 
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+
+function sendMsg(message) {
+    if (!message) return;
+    try {
+        if ($.isNode()) {
+            let notify;
+            try {
+                notify = require('./sendNotify');
+            } catch (e) {
+                notify = require('./utils/sendNotify');
+            }
+            notify.sendNotify($.name, message);
+        } else {
+            $.msg($.name, '', message);
+        }
+    } catch (e) {
+        $.log(`\n\n-----${$.name}-----\n${message}`);
+    }
+}
+
+// Env class and related methods remain the same
+// Load utilities function (dummy implementation)
 async function loadUtils() {
     // Simulate loading external utilities if needed
     return {};
