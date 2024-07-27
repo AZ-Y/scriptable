@@ -33,6 +33,19 @@ async function main() {
             token
         );
         console.log(`签到结果: ${JSON.stringify(sign)}`);
+
+        // 获取当前积分和手机号
+        let userInfo = await commonPost('https://hx.hemiao100.com/backg/store/memberCenterInfo/query_card_info', 
+            {
+                "centerId": "bee93334df5eba197967a5d47e65a0f6",
+                "appPath": "pages/user/user",
+                "storeCode": "53010017032439",
+                "_t": new Date().getTime()
+            },
+            token
+        );
+        console.log(`用户信息: ${JSON.stringify(userInfo)}`);
+
         if (sign.code === "200") {
             if (sign.errMsg) {
                 console.log('签到失败:', sign.errMsg);
@@ -44,6 +57,13 @@ async function main() {
         } else {
             console.log('签到失败:', sign.inMsg);
             notice += `签到失败: ${sign.inMsg || '未知错误'}\n`;
+        }
+
+        if (userInfo.code === "0") {
+            notice += `当前积分: ${userInfo.result.currentIntegral}\n`;
+            notice += `当前手机号: ${userInfo.result.cardMobile}\n`;
+        } else {
+            notice += `获取用户信息失败: ${userInfo.errMsg || '未知错误'}\n`;
         }
     }
 
