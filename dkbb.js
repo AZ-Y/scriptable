@@ -33,12 +33,17 @@ async function main() {
             token
         );
         console.log(`签到结果: ${JSON.stringify(sign)}`);
-        if (sign.code === 200) {
-            console.log('签到成功');
-            notice += '签到成功\n';
+        if (sign.code === "200") {
+            if (sign.errMsg) {
+                console.log('签到失败:', sign.errMsg);
+                notice += `签到失败: ${sign.errMsg}\n`;
+            } else {
+                console.log('签到成功');
+                notice += '签到成功\n';
+            }
         } else {
-            console.log('签到失败:', sign.msg);
-            notice += `签到失败: ${sign.msg}\n`;
+            console.log('签到失败:', sign.inMsg);
+            notice += `签到失败: ${sign.inMsg || '未知错误'}\n`;
         }
     }
 
