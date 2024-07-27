@@ -36,14 +36,14 @@ async function main() {
         if (sign.code === "200") {
             if (sign.errMsg) {
                 console.log('签到失败:', sign.errMsg);
-                notice += `签到失败: ${sign.errMsg}\n`;
+                notice += `账号 ${token} 签到失败: ${sign.errMsg}\n`;
             } else {
                 console.log('签到成功');
-                notice += '签到成功\n';
+                notice += `账号 ${token} 签到成功\n`;
             }
         } else {
             console.log('签到失败:', sign.inMsg);
-            notice += `签到失败: ${sign.inMsg || '未知错误'}\n`;
+            notice += `账号 ${token} 签到失败: ${sign.inMsg || '未知错误'}\n`;
         }
     }
 
@@ -108,6 +108,32 @@ async function commonPost(url, body, token) {
     });
 }
 
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+
+function sendMsg(message) {
+    if (!message) return;
+    try {
+        if ($.isNode()) {
+            let notify;
+            try {
+                notify = require('./sendNotify');
+            } catch (e) {
+                notify = require('./utils/sendNotify');
+            }
+            notify.sendNotify($.name, message);
+        } else {
+            $.msg($.name, '', message);
+        }
+    } catch (e) {
+        $.log(`\n\n-----${$.name}-----\n${message}`);
+    }
+}
+
+// Env class and related methods remain the same
+// Load utilities function (dummy implementation)
 async function loadUtils() {
     // Simulate loading external utilities if needed
     return {};
