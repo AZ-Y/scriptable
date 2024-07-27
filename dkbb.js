@@ -36,14 +36,14 @@ async function main() {
         if (sign.code === "200") {
             if (sign.errMsg) {
                 console.log('签到失败:', sign.errMsg);
-                notice += `账号 ${token} 签到失败: ${sign.errMsg}\n`;
+                notice += `签到失败: ${sign.errMsg}\n`;
             } else {
                 console.log('签到成功');
-                notice += `账号 ${token} 签到成功\n`;
+                notice += '签到成功\n';
             }
         } else {
             console.log('签到失败:', sign.inMsg);
-            notice += `账号 ${token} 签到失败: ${sign.inMsg || '未知错误'}\n`;
+            notice += `签到失败: ${sign.inMsg || '未知错误'}\n`;
         }
     }
 
