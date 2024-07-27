@@ -2,7 +2,7 @@
         请勿转载与贩卖！⚠️⚠️⚠️
 
 [Script]
-http-request ^https:\/\/openapi\.jmzawushe\.com\/member\/signRecord script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/jmzhsck.js, timeout=10, enabled=true, tag=九木杂货社Cookies
+http-request ^https:\/\/openapi\.jmzawushe\.com\/member\/signRecord script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/jmzhs.js, timeout=10, enabled=true, tag=九木杂货社Cookies
 
 
 [Task]
