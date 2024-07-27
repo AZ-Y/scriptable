@@ -1,10 +1,13 @@
-【Quantumult X】
------------------
-[rewrite_local]
-https:\/\/wxavip\-up\.ezrpro\.cn\/Vip url script-request-body https://raw.githubusercontent.com/evilbutcher/Quantumult_X/master/check_in/jiumu/jiumu.js
+使用声明：⚠️⚠️⚠️此脚本仅供学习与交流，
+        请勿转载与贩卖！⚠️⚠️⚠️
 
-[task_local]
-5 0 * * * https://raw.githubusercontent.com/evilbutcher/Quantumult_X/master/check_in/jiumu/jiumu.js, tag=九木杂物社
+[Script]
+http-request ^https:\/\/openapi\.jmzawushe\.com\/member\/signRecord script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/jmzhsck.js, timeout=10, enabled=true, tag=九木杂货社Cookies
 
-【All App MitM】
-hostname = wxavip-up.ezrpro.cn
+
+[Task]
+cron "30 6 * * *" script-path=https://raw.githubusercontent.com/AZ-Y/scriptable/main/jmzhsck.js, timeout=3600, tag=九木杂物社
+
+
+[MITM]
+hostname = openapi.jmzawushe.com
