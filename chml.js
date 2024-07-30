@@ -1,31 +1,32 @@
 const $ = new Env("长虹美菱签到");
 const ckName = "changhong_token";
+
 //-------------------- 一般不动变量区域 -------------------------------------
-const Notify = 1; //0为关闭通知,1为打开通知,默认为1
+const Notify = 1; // 0为关闭通知,1为打开通知,默认为1
 const notify = $.isNode() ? require('./sendNotify') : '';
-let envSplitor = ["@"]; //多账号分隔符
+let envSplitor = ["@"]; // 多账号分隔符
 let userCookie = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
 let userList = [];
 let userIdx = 0;
 let userCount = 0;
 // 为通知准备的空数组
 $.notifyMsg = [];
-//bark推送
+// bark推送
 $.barkKey = ($.isNode() ? process.env["bark_key"] : $.getdata("bark_key")) || '';
 //---------------------- 自定义变量区域 -----------------------------------
 
-//脚本入口函数main()
+// 脚本入口函数main()
 async function main() {
     console.log('\n================== 任务 ==================\n');
     let taskall = [];
     for (let user of userList) {
         if (user.ckStatus) {
-            //ck未过期，开始执行任务
+            // ck未过期，开始执行任务
             console.log(`随机延迟${user.getRandomTime()}ms`);
             taskall.push(await user.signin());
             await $.wait(user.getRandomTime());
         } else {
-            //将ck过期消息存入消息数组
+            // 将ck过期消息存入消息数组
             $.notifyMsg.push(`❌账号${user.index} >> Check ck error!`)
         }
     }
@@ -41,7 +42,7 @@ class UserInfo {
     getRandomTime() {
         return randomInt(1000, 3000);
     }
-    //签到函数
+    // 签到函数
     async signin() {
         try {
             if (!this.token) {
@@ -53,9 +54,9 @@ class UserInfo {
                 method: 'POST',
                 headers: {
                     'Accept-Encoding': `gzip,compress,br,deflate`,
-                    'smarthome': this.token,
+                    'Token': this.token,
                     'Connection': `keep-alive`,
-                    'content-type': `application/json`,
+                    'Content-Type': `application/json`,
                     'Referer': `https://servicewechat.com/wx36c3413e8fe39263/206/page-frame.html`,
                     'Host': `hongke.changhong.com`,
                     'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`,
@@ -63,6 +64,7 @@ class UserInfo {
                 },
                 body: ``
             };
+
             let result = await httpRequest(options);
             console.log("签到请求结果:", result);
             if (result && result.code === "0" && result.message === "签到成功") {
@@ -84,39 +86,38 @@ async function main() {
     let taskall = [];
     for (let user of userList) {
         if (user.ckStatus) {
-            //ck未过期，开始执行任务
+            // ck未过期，开始执行任务
             console.log(`随机延迟${user.getRandomTime()}ms`);
             taskall.push(await user.signin());
             await $.wait(user.getRandomTime());
         } else {
-            //将ck过期消息存入消息数组
+            // 将ck过期消息存入消息数组
             $.notifyMsg.push(`❌账号${user.index} >> Check ck error!`)
         }
     }
 }
 
-//主程序执行入口
+// 主程序执行入口
 !(async () => {
-    //没有设置变量,执行Cookie获取
+    // 没有设置变量, 执行Cookie获取
     if (typeof $request != "undefined") {
         await getCookie();
         return;
     }
-    //未检测到ck，退出
+    // 未检测到ck，退出
     if (!(await checkEnv())) { throw new Error(`❌未检测到ck，请添加环境变量`) };
     if (userList.length > 0) {
         await main();
     }
-    if ($.barkKey) { //如果已填写Bark Key
-        await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); //推送Bark通知
-    };
+    if ($.barkKey) { // 如果已填写Bark Key
+        await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); // 推送Bark通知
+    }
 })()
-    .catch((e) => $.notifyMsg.push(e.message || e)) //捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
+    .catch((e) => $.notifyMsg.push(e.message || e)) // 捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
     .finally(async () => {
-        await SendMsg($.notifyMsg.join('\n')); //带上总结推送通知
-        $.done(); //调用Surge、QX内部特有的函数, 用于退出脚本执行
+        await SendMsg($.notifyMsg.join('\n')); // 带上总结推送通知
+        $.done(); // 调用Surge、QX内部特有的函数, 用于退出脚本执行
     });
-    
 
 /** --------------------------------辅助函数区域------------------------------------------- */
 
@@ -133,7 +134,7 @@ function DoubleLog(data) {
     }
 }
 
-//把json 转为以 ‘&’ 连接的字符串
+// 把json转为以‘&’连接的字符串
 function toParams(body) {
     var params = Object.keys(body).map(function (key) {
         return encodeURIComponent(key) + "=" + encodeURIComponent(body[key]);
@@ -141,7 +142,7 @@ function toParams(body) {
     return params;
 }
 
-//检查变量
+// 检查变量
 async function checkEnv() {
     if (userCookie) {
         let e = envSplitor[0];
