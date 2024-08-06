@@ -26,17 +26,12 @@ async function main() {
         let sign = await kraftHeinzSignIn(token);
         console.log(`签到结果: ${JSON.stringify(sign)}`);
         
-        if (sign.code === "200") {
-            if (sign.errMsg) {
-                console.log('签到失败:', sign.errMsg);
-                notice += `签到失败: ${sign.errMsg}\n`;
-            } else {
-                console.log('签到成功');
-                notice += '签到成功\n';
-            }
+        if (sign.error_code === 0) {
+            console.log('签到成功');
+            notice += '签到成功\n';
         } else {
-            console.log('签到失败:', sign.message);
-            notice += `签到失败: ${sign.message || '未知错误'}\n`;
+            console.log('签到失败:', sign.msg);
+            notice += `签到失败: ${sign.msg || '未知错误'}\n`;
         }
     }
 
@@ -96,14 +91,13 @@ async function kraftHeinzSignIn(token) {
         $.post(options, (err, resp, data) => {
             if (err) {
                 console.log(`API请求失败: ${JSON.stringify(err)}`);
-                resolve({ code: "500", message: err });
+                resolve({ error_code: 500, msg: err });
             } else {
                 resolve(JSON.parse(data));
             }
         });
     });
 }
-
 
 async function loadUtils() {
     // Simulate loading external utilities if needed
