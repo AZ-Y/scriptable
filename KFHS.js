@@ -1,404 +1,217 @@
-# !/usr/bin/python3
-# -- coding: utf-8 --
-# -------------------------------
-# cron "0 0,8 * * " script-path=xxx.py,tag=匹配cron用
-# const $ = new Env('微信公众号：卡夫亨氏新厨艺')
+const $ = new Env('卡夫亨氏签到');
+const KFHS = ($.isNode() ? JSON.parse(process.env.KFHS) : $.getjson("KFHS")) || [];
+let Utils = undefined;
+let notice = '';
 
-import os
-import random
-import time
-from datetime import date, datetime,time as times
+(async () => {
+    if (typeof $request !== "undefined") {
+        await getCookie();
+    } else {
+        await main();
+    }
+})().catch((e) => {
+    $.log(e);
+}).finally(() => {
+    $.done({});
+});
 
-import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-# 禁用安全请求警告
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-IS_DEV = False
-if os.path.isfile('DEV_ENV.py'):
-    import DEV_ENV
-    IS_DEV = True
-
-if os.path.isfile('notify.py'):
-    from notify import send
-    print("加载通知服务成功！")
-else:
-    print("加载通知服务失败!")
-send_msg = ''
-one_msg=''
-def Log(cont=''):
-    global send_msg,one_msg
-    print(cont)
-    if cont:
-        one_msg += f'{cont}\n'
-        send_msg += f'{cont}\n'
-
-class RUN:
-    def __init__(self,info,index):
-        global one_msg
-        one_msg = ''
-        split_info = info.split('@')
-        self.token = split_info[0]
-        len_split_info = len(split_info)
-        last_info = split_info[len_split_info - 1]
-        self.send_UID = None
-        if len_split_info > 0 and "UID_" in last_info:
-            self.send_UID = last_info
-        self.index = index + 1
-        Log(f"\n---------开始执行第{self.index}个账号>>>>>")
-        self.s = requests.session()
-        self.s.verify = False
-
-        self.headers = {
-            'Host': 'kraftheinzcrm-uat.kraftheinz.net.cn',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63090719) XWEB/8447 Flue',
-            'token': self.token,
-            'Accept': '*/*',
-            'Origin': 'https://fscrm.kraftheinz.net.cn',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Dest': 'empty',
-            'Referer': 'https://fscrm.kraftheinz.net.cn/?code=031NdLkl2SD8ac4BUKll2x4iqC2NdLkO&state=fid%3DN8d3E4AyKCBiu7DuBRNPlw&appid=wx65da983ae179e97b',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Content-Type': 'application/x-www-form-urlencoded',
-        }
-        self.baseUrl = 'https://kraftheinzcrm-uat.kraftheinz.net.cn/crm/public/index.php/api/v1/'
-
-    def getUserInfo(self,End=False):
-        global userid_list, username_list
-        response = self.s.get(
-            f'{self.baseUrl}getUserInfo',
-            headers=self.headers
-        )
-        if response.status_code == 200:
-            try:
-                resp = response.json()
-                data = resp.get('data',{})
-                nickname = data.get('nickname','')
-                openId = data.get('openId','')
-                signTimes = data.get('signTimes',0)
-                memberInfo = data.get('memberInfo', {})
-                self.phone = memberInfo.get('phone', '')
-                score = memberInfo.get('score', '')
-                if End :
-                    Log(f'执行后积分：【{score}】')
-                    return True
-                self.member_id = data.get('member_id','')
-                # add = {"nickname":nickname,"member_id":member_id}
-                userid_list.append(self.member_id)
-                username_list.append(nickname)
-                serialSign = data.get('serialSign', [{}])
-                signTimes = data.get('signTimes', 0)
-                Log(f'>>>当前用户：【{nickname}】\nID：【{self.member_id}】 \nOpenID:【{openId}】 \n已连续签到【{signTimes}】天')
-
-                if serialSign:
-                    current_date = date.today()
-                    date_string = serialSign[0].get('createdAt',current_date)
-                    memberBalance = serialSign[0].get('memberBalance', 0)
-                    parsed_date = datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S').date()
-                    if parsed_date == current_date:
-                        print(f"今日已签到，当前积分：【{memberBalance}】")
-                else:
-                    print("今日未签到")
-                    wait_time = random.randint(1000, 10000) / 1000.0  # 转换为秒
-                    time.sleep(wait_time)
-                    print('随机延时1-10秒执行签到')
-                    self.dailySign()
-                return True
-            except:
-                print(response.text)
-                return False
-        else:
-            print("API访问失败！")
-            return False
-
-
-    def dailySign(self):
-        print('执行签到')
-        response = self.s.post(
-            f'{self.baseUrl}dailySign',
-            headers=self.headers
-        )
-        if response.status_code == 200:
-            try:
-                resp = response.json()
-                msg = resp['msg']
-                Log(f'>{msg}')
-            except:
-                print(response.text)
-        else:
-            print("API访问失败！")
-
-    def getCookbookIndex(self):
-        global Cookid_list
-        data = {
-            'page': '1',
-            'pagesize': '30'
-        }
-        response = self.s.post(
-            f'{self.baseUrl}getCookbookIndex',
-            headers=self.headers, data=data
-        )
-        if response.status_code == 200:
-            try:
-                resp = response.json()
-                id_list = resp['data']['chineseCookbook']['data']
-                for i in id_list:
-                    Cookid_list.append(i['id'])
-                    # self.creatCookbookCode(i['id'])
-                print(f'>获取到菜谱ID:【{Cookid_list}】')
-            except:
-                print(response.text)
-        else:
-            print("API访问失败！")
-
-    def creatCookbookCode(self,cookbook_id):
-
-        data = {
-            'cookbook_id':cookbook_id
-        }
-        response = self.s.post(
-            f'{self.baseUrl}createCookbookCode',
-            headers=self.headers, data=data
-        )
-        if response.status_code == 200:
-            try:
-                resp = response.json()
-                data = resp.get('data',{})
-                code_url = data.get('code_url','')
-                print(f'创建分享链接成功：[{code_url}]')
-            except:
-                print(response.text)
-        else:
-            print("API访问失败！")
-
-    def recordScoreShare(self, cookbook_id, now_id):
-        # print('')
-        # self.getUserInfo()
-        Log('开始互助')
-        for id in userid_list:
-            if now_id == id: continue
-            # Log(f'>>>开始为【{id}】分享的菜谱【{cookbook_id}】助力')
-            data = {
-                'cookbook_id': cookbook_id,
-                'invite_id': id,
+async function main() {
+    console.log('卡夫亨氏签到开始');
+    Utils = await loadUtils();
+    for (const item of KFHS) {
+        const token = item.token;
+        console.log(`开始签到，token: ${token}`);
+        
+        // 签到接口
+        let sign = await kraftHeinzSignIn(token);
+        console.log(`签到结果: ${JSON.stringify(sign)}`);
+        
+        if (sign.code === "200") {
+            if (sign.errMsg) {
+                console.log('签到失败:', sign.errMsg);
+                notice += `签到失败: ${sign.errMsg}\n`;
+            } else {
+                console.log('签到成功');
+                notice += '签到成功\n';
             }
-            response = self.s.post(
-                f'{self.baseUrl}recordScoreShare',
-                headers=self.headers, data=data
-            )
-            if response.status_code == 200:
-                try:
-                    resp = response.json()
-                    msg = resp['msg']
-                    Log(f'>为【{id}】助力结果：【{msg}】')
-                except:
-                    print(response.text)
-            else:
-                print("API访问失败！")
-
-    def helpAuthor(self, authorid, cookbook_id, now_id):
-        Log('开始助力作者')
-        if now_id != authorid:
-            data = {
-                'cookbook_id': cookbook_id,
-                'invite_id': authorid,
-            }
-            response = self.s.post(
-                f'{self.baseUrl}recordScoreShare',
-                headers=self.headers, data=data
-            )
-            if response.status_code == 200:
-                try:
-                    resp = response.json()
-                    msg = resp['msg']
-                    Log(f'>为【作者】助力结果：【{msg}】')
-                except:
-                    print(response.text)
-            else:
-                print("API访问失败！")
-        else:
-            Log('助力对象为自身，跳过')
-
-    def exchange(self):
-        data = {
-            'phone': self.phone
+        } else {
+            console.log('签到失败:', sign.message);
+            notice += `签到失败: ${sign.message || '未知错误'}\n`;
         }
-        huafei_li = ['全网10元话费', '全网20元话费']
-        videoCard_li = []
-        cardType = []
-        for card in huafei_li:
-            data['value'] = card
-            data['type'] = '话费'
-            data['memberId'] = self.member_id
-            self.exchangeIntegralNew(data)
+    }
 
-        for card in cardType:
-            for video in videoCard_li:
-                cardname = video + card
-                data['value'] = cardname
-                data['type'] = '视频卡'
-                self.exchangeIntegralNew(data)
-                print(cardname)
+    sendMsg(notice);
+}
 
+async function getCookie() {
+    const token = $request.headers['token'];
+    if (!token) {
+        console.log('未找到token头部');
+        return;
+    }
+    const newData = { "token": token };
+    const index = KFHS.findIndex(e => e.token === newData.token);
+    if (index !== -1) {
+        if (KFHS[index].token === newData.token) {
+            console.log('token未改变');
+            return;
+        } else {
+            KFHS[index] = newData;
+            console.log('更新token:', newData.token);
+            $.msg($.name, '更新token成功!', '');
+        }
+    } else {
+        KFHS.push(newData);
+        console.log('新增token:', newData.token);
+        $.msg($.name, '新增token成功!', '');
+    }
+    $.setjson(KFHS, "KFHS");
+}
 
-    # 预留兑换函数
-    def exchangeIntegralNew(self,data):
-        print(f'正在尝试兑换【{data["value"]}】')
-        response = self.s.post(
-            f'{self.baseUrl}exchangeIntegralNew',
-            headers=self.headers,
-            data=data
-        )
-        if response.status_code == 200:
-            try:
-                resp = response.json()
-                msg = resp['msg']
-                Log(f'>{msg}')
-            except:
-                print(response.text)
-        else:
-            print("API访问失败！")
+async function kraftHeinzSignIn(token) {
+    const url = `https://kraftheinzcrm-uat.kraftheinz.net.cn/crm/public/index.php/api/v1/dailySign`;
+    const method = `POST`;
+    const headers = {
+        'Accept': `*/*`,
+        'Origin': `https://fscrm.kraftheinz.net.cn`,
+        'Accept-Encoding': `gzip, deflate, br`,
+        'Connection': `keep-alive`,
+        'Content-Type': `application/x-www-form-urlencoded`,
+        'Host': `kraftheinzcrm-uat.kraftheinz.net.cn`,
+        'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`,
+        'Referer': `https://fscrm.kraftheinz.net.cn/`,
+        'token': token,
+        'Accept-Language': `zh-CN,zh-Hans;q=0.9`
+    };
+    const body = ``;
 
-    def main(self):
-        if self.getUserInfo():
-            print("兑换")
-            now = datetime.now().time()
-            start_time = times(23, 59, 59)
-            end_time = times(2, 5)
-            if now >= start_time or now <= end_time:
-                self.exchange()
-            self.getCookbookIndex()
-            self.getUserInfo(True)
-            self.sendMsg()
-            return True
-        else:
-            self.sendMsg()
-            return False
+    const options = {
+        url: url,
+        method: method,
+        headers: headers,
+        body: body
+    };
 
-    def help(self):
-        # print(Cookid_list)
-        # print(username_list)
-        # print(userid_list)
-        if Cookid_list and username_list and userid_list:
-            cookbook_id = random.choice(Cookid_list)
-            username = username_list[self.index-1]
-            now_id = userid_list[self.index-1]
-            Log(f'\n当前用于助力用户:【{username}】 ID:【{now_id}】')
-            self.helpAuthor(659402, cookbook_id, now_id)
-            self.helpAuthor(659403, cookbook_id, now_id)
-            self.helpAuthor(659404, cookbook_id, now_id)
-            self.helpAuthor(659405, cookbook_id, now_id)
-            self.helpAuthor(659406, cookbook_id, now_id)
-            self.recordScoreShare(cookbook_id, now_id)
-            self.sendMsg(True)
-            return True
-        else:
-            return False
+    return new Promise(resolve => {
+        $.post(options, (err, resp, data) => {
+            if (err) {
+                console.log(`API请求失败: ${JSON.stringify(err)}`);
+                resolve({ code: "500", message: err });
+            } else {
+                resolve(JSON.parse(data));
+            }
+        });
+    });
+}
 
 
-    def sendMsg(self,help=False):
-        if self.send_UID:
-            push_res = CHERWIN_TOOLS.wxpusher(self.send_UID, one_msg, APP_NAME,help)
-            print(push_res)
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+
+function sendMsg(message) {
+    if (!message) return;
+    try {
+        if ($.isNode()) {
+            let notify;
+            try {
+                notify = require('./sendNotify');
+            } catch (e) {
+                notify = require('./utils/sendNotify');
+            }
+            notify.sendNotify($.name, message);
+        } else {
+            $.msg($.name, '', message);
+        }
+    } catch (e) {
+        $.log(`\n\n-----${$.name}-----\n${message}`);
+    }
+}
+
+// Env class and related methods remain the same
+// Load utilities function (dummy implementation)
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+
+function jsonToQueryString(t = {}) {
+    return Object.keys(t).sort().map(e => `${encodeURIComponent(e)}=${encodeURIComponent(t[e])}`).join("&");
+}
+
+function sendMsg(message) {
+    if (!message) return;
+    try {
+        if ($.isNode()) {
+            let notify;
+            try {
+                notify = require('./sendNotify');
+            } catch (e) {
+                notify = require('./utils/sendNotify');
+            }
+            notify.sendNotify($.name, message);
+        } else {
+            $.msg($.name, '', message);
+        }
+    } catch (e) {
+        $.log(`\n\n-----${$.name}-----\n${message}`);
+    }
+}
+
+// Env class and related methods remain the same
+// Load utilities function (dummy implementation)
+async function loadUtils() {
+    // Simulate loading external utilities if needed
+    return {};
+}
+//加载 crypto-js
+async function intCryptoJS() {
+    function Eval_Crypto(script_str) {
+        const evalFunc = $.isNode() ? global.eval : eval;
+        evalFunc(script_str);
+        return $.isNode() ? global.CryptoJS : CryptoJS;
+    }
+    if($.is_debug !== 'true'){//调试模式默认从网络读取js脚本
+        let script_str = ($.isNode() ? require("crypto-js") : $.getdata("cryptojs_Script")) || "";
+        if ($.isNode()) {
+            $.log("✅ " + $.name + ": node环境，默认使用crypto-js模块");
+            return script_str;
+        }
+        if (script_str && Object.keys(script_str).length) {
+            $.log("✅ " + $.name + ": 缓存中存在CryptoJS代码, 跳过下载");
+            return Eval_Crypto(script_str)
+        }
+    }
+    $.log("🚀 " + "开始下载CryptoJS代码");
+    // const script_str = (await $.http.get('http://192.168.2.170:8080/crypto-js.min.js')).body;
+    // Eval_Crypto(script_str);
+    return new Promise(async resolve => {
+        $.getScript('http://ys-l.ysepan.com/551976330/420094417/k5G4J73367NKLlPfoiL4c/crypto-js.min.js').then(script_str => {
+            $.setdata(script_str, "cryptojs_Script");
+            Eval_Crypto(script_str)
+            $.log("✅ CryptoJS加载成功");
+            resolve(CryptoJS);
+        });
+    });
+}
 
 
-def down_file(filename, file_url):
-    print(f'开始下载：{filename}，下载地址：{file_url}')
-    try:
-        response = requests.get(file_url, verify=False, timeout=10)
-        response.raise_for_status()
-        with open(filename + '.tmp', 'wb') as f:
-            f.write(response.content)
-        print(f'【{filename}】下载完成！')
+function jsonToQueryString(t = {}) {
+    return Object.keys(t).sort().map(e => `${encodeURIComponent(e)}=${encodeURIComponent(t[e])}`).join("&");
+}
 
-        # 检查临时文件是否存在
-        temp_filename = filename + '.tmp'
-        if os.path.exists(temp_filename):
-            # 删除原有文件
-            if os.path.exists(filename):
-                os.remove(filename)
-            # 重命名临时文件
-            os.rename(temp_filename, filename)
-            print(f'【{filename}】重命名成功！')
-            return True
-        else:
-            print(f'【{filename}】临时文件不存在！')
-            return False
-    except Exception as e:
-        print(f'【{filename}】下载失败：{str(e)}')
-        return False
+//DEBUG
+function debug(content,title="debug"){let start=`\n-----${title}-----\n`;let end=`\n-----${$.time('HH:mm:ss')}-----\n`;if($.is_debug==='true'){if(typeof content=="string"){$.log(start+content+end);}else if(typeof content=="object"){$.log(start+$.toStr(content)+end);}}};
 
-def import_Tools():
-    global CHERWIN_TOOLS,ENV, APP_INFO, TIPS, TIPS_HTML, AuthorCode
-    import CHERWIN_TOOLS
-    # print(APP_NAME, local_script_name, ENV_NAME,local_version)
-    ENV, APP_INFO, TIPS, TIPS_HTML, AuthorCode = CHERWIN_TOOLS.main(APP_NAME, local_script_name, ENV_NAME,local_version)
+//GET ENV
+function getEnv(...keys){for(let key of keys){var value=$.isNode()?process.env[key]||process.env[key.toUpperCase()]||process.env[key.toLowerCase()]||$.getdata(key):$.getdata(key);if(value)return value;}};
 
+//到小写
+function ObjectKeys2LowerCase(obj){return Object.fromEntries(Object.entries(obj).map(([k,v])=>[k.toLowerCase(),v]))};
 
+//通知
+async function sendMsg(message){if(!message)return;try{if($.isNode()){try{var notify=require('./sendNotify');}catch(e){var notify=require('./utils/sendNotify');}await notify.sendNotify($.name,message);}else{$.msg($.name,'',message);}}catch(e){$.log(`\n\n-----${$.name}-----\n${message}`);}};
 
-
-if __name__ == '__main__':
-    APP_NAME = '卡夫亨氏新厨艺'
-    ENV_NAME = 'KFHS'
-    CK_NAME = 'token'
-    print(f'''
-✨✨✨ {APP_NAME}签到✨✨✨
-✨ 功能：
-  积分签到
-✨ 抓包步骤：
-  打开{APP_NAME}
-  授权登陆
-  打开抓包工具
-  找请求头带{CK_NAME}的URl
-  复制里面的{CK_NAME}参数值
-✨ 注册链接（复制微信打开）：
-https://fscrm.kraftheinz.net.cn/?from=N8d3E4AyKCBiu7DuBRNPlw==#/
-
-https://kraftheinzcrm-uat.kraftheinz.net.cn/?from=FoAgXkwvgZl6SOyJ2ekGrg==
-✨ ✨✨wxpusher一对一推送功能，
-  ✨需要定义变量export WXPUSHER=wxpusher的app_token，不设置则不启用wxpusher一对一推送
-  ✨需要在{ENV_NAME}变量最后添加@wxpusher的UID
-参数示例：Fks8FqmiTksnmZSj2fDvxxxxxxxxx@UID_xxxxx
-✨ 设置青龙变量：
-export {ENV_NAME}='{CK_NAME}参数值'多账号#或&分割
-export SCRIPT_UPDATE = 'False' 关闭脚本自动更新，默认开启
-✨ ✨ 注意：token有效期7天，7天后重新抓
-✨ 推荐cron：0 0,8 * * 
-✨✨✨ @Author CHERWIN✨✨✨
-''')
-    local_script_name = os.path.basename(__file__)
-    local_version = '2024.06.03'
-    if IS_DEV:
-        import_Tools()
-    else:
-        if os.path.isfile('CHERWIN_TOOLS.py'):
-            import_Tools()
-        else:
-            if down_file('CHERWIN_TOOLS.py', 'https://github.com/CHERWING/CHERWIN_SCRIPTS/raw/main/CHERWIN_TOOLS.py'):
-                print('脚本依赖下载完成请重新运行脚本')
-                import_Tools()
-            else:
-                print('脚本依赖下载失败，请到https://github.com/CHERWING/CHERWIN_SCRIPTS/raw/main/CHERWIN_TOOLS.py下载最新版本依赖')
-                exit()
-    print(TIPS)
-    token = ''
-    token = ENV if ENV else token
-    # print(token)
-    if not token:
-        print(f"未填写{ENV_NAME}变量\n青龙可在环境变量设置 {ENV_NAME} 或者在本脚本文件上方将{CK_NAME}填入token =''")
-        exit()
-    tokens = CHERWIN_TOOLS.ENV_SPLIT(token)
-    # print(tokens)
-    Cookid_list = []
-    userid_list = []
-    username_list = []
-    if len(tokens) > 0:
-        print(f"\n>>>>>>>>>>共获取到{len(tokens)}个账号<<<<<<<<<<")
-        for index, infos in enumerate(tokens):
-            run_result = RUN(infos, index).main()
-            if not run_result: continue
-        print(f"\n>>>>>>>>>>开始互助<<<<<<<<<<")
-        for index, infos in enumerate(tokens):
-            run_result = RUN(infos, index).help()
-            if not run_result: continue
-        if send: send(f'{APP_NAME}挂机通知', send_msg + TIPS_HTML)
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ENV
+function Env(t,e){class s{constructor(t){this.env=t}send(t,e="GET"){t="string"==typeof t?{url:t}:t;let s=this.get;return"POST"===e&&(s=this.post),new Promise((e,a)=>{s.call(this,t,(t,s,r)=>{t?a(t):e(s)})})}get(t){return this.send.call(this.env,t)}post(t){return this.send.call(this.env,t,"POST")}}return new class{constructor(t,e){this.name=t,this.http=new s(this),this.data=null,this.dataFile="box.dat",this.logs=[],this.isMute=!1,this.isNeedRewrite=!1,this.logSeparator="\n",this.encoding="utf-8",this.startTime=(new Date).getTime(),Object.assign(this,e),this.log("",`🔔${this.name}, 开始!`)}getEnv(){return"undefined"!=typeof $environment&&$environment["surge-version"]?"Surge":"undefined"!=typeof $environment&&$environment["stash-version"]?"Stash":"undefined"!=typeof module&&module.exports?"Node.js":"undefined"!=typeof $task?"Quantumult X":"undefined"!=typeof $loon?"Loon":"undefined"!=typeof $rocket?"Shadowrocket":void 0}isNode(){return"Node.js"===this.getEnv()}isQuanX(){return"Quantumult X"===this.getEnv()}isSurge(){return"Surge"===this.getEnv()}isLoon(){return"Loon"===this.getEnv()}isShadowrocket(){return"Shadowrocket"===this.getEnv()}isStash(){return"Stash"===this.getEnv()}toObj(t,e=null){try{return JSON.parse(t)}catch{return e}}toStr(t,e=null){try{return JSON.stringify(t)}catch{return e}}getjson(t,e){let s=e;const a=this.getdata(t);if(a)try{s=JSON.parse(this.getdata(t))}catch{}return s}setjson(t,e){try{return this.setdata(JSON.stringify(t),e)}catch{return!1}}getScript(t){return new Promise(e=>{this.get({url:t},(t,s,a)=>e(a))})}runScript(t,e){return new Promise(s=>{let a=this.getdata("@chavy_boxjs_userCfgs.httpapi");a=a?a.replace(/\n/g,"").trim():a;let r=this.getdata("@chavy_boxjs_userCfgs.httpapi_timeout");r=r?1*r:20,r=e&&e.timeout?e.timeout:r;const[i,o]=a.split("@"),n={url:`http://${o}/v1/scripting/evaluate`,body:{script_text:t,mock_type:"cron",timeout:r},headers:{"X-Key":i,Accept:"*/*"},timeout:r};this.post(n,(t,e,a)=>s(a))}).catch(t=>this.logErr(t))}loaddata(){if(!this.isNode())return{};{this.fs=this.fs?this.fs:require("fs"),this.path=this.path?this.path:require("path");const t=this.path.resolve(this.dataFile),e=this.path.resolve(process.cwd(),this.dataFile),s=this.fs.existsSync(t),a=!s&&this.fs.existsSync(e);if(!s&&!a)return{};{const a=s?t:e;try{return JSON.parse(this.fs.readFileSync(a))}catch(t){return{}}}}}writedata(){if(this.isNode()){this.fs=this.fs?this.fs:require("fs"),this.path=this.path?this.path:require("path");const t=this.path.resolve(this.dataFile),e=this.path.resolve(process.cwd(),this.dataFile),s=this.fs.existsSync(t),a=!s&&this.fs.existsSync(e),r=JSON.stringify(this.data);s?this.fs.writeFileSync(t,r):a?this.fs.writeFileSync(e,r):this.fs.writeFileSync(t,r)}}lodash_get(t,e,s){const a=e.replace(/\[(\d+)\]/g,".$1").split(".");let r=t;for(const t of a)if(r=Object(r)[t],void 0===r)return s;return r}lodash_set(t,e,s){return Object(t)!==t?t:(Array.isArray(e)||(e=e.toString().match(/[^.[\]]+/g)||[]),e.slice(0,-1).reduce((t,s,a)=>Object(t[s])===t[s]?t[s]:t[s]=Math.abs(e[a+1])>>0==+e[a+1]?[]:{},t)[e[e.length-1]]=s,t)}getdata(t){let e=this.getval(t);if(/^@/.test(t)){const[,s,a]=/^@(.*?)\.(.*?)$/.exec(t),r=s?this.getval(s):"";if(r)try{const t=JSON.parse(r);e=t?this.lodash_get(t,a,""):e}catch(t){e=""}}return e}setdata(t,e){let s=!1;if(/^@/.test(e)){const[,a,r]=/^@(.*?)\.(.*?)$/.exec(e),i=this.getval(a),o=a?"null"===i?null:i||"{}":"{}";try{const e=JSON.parse(o);this.lodash_set(e,r,t),s=this.setval(JSON.stringify(e),a)}catch(e){const i={};this.lodash_set(i,r,t),s=this.setval(JSON.stringify(i),a)}}else s=this.setval(t,e);return s}getval(t){switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":return $persistentStore.read(t);case"Quantumult X":return $prefs.valueForKey(t);case"Node.js":return this.data=this.loaddata(),this.data[t];default:return this.data&&this.data[t]||null}}setval(t,e){switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":return $persistentStore.write(t,e);case"Quantumult X":return $prefs.setValueForKey(t,e);case"Node.js":return this.data=this.loaddata(),this.data[e]=t,this.writedata(),!0;default:return this.data&&this.data[e]||null}}initGotEnv(t){this.got=this.got?this.got:require("got"),this.cktough=this.cktough?this.cktough:require("tough-cookie"),this.ckjar=this.ckjar?this.ckjar:new this.cktough.CookieJar,t&&(t.headers=t.headers?t.headers:{},void 0===t.headers.Cookie&&void 0===t.cookieJar&&(t.cookieJar=this.ckjar))}get(t,e=(()=>{})){switch(t.headers&&(delete t.headers["Content-Type"],delete t.headers["Content-Length"],delete t.headers["content-type"],delete t.headers["content-length"]),t.params&&(t.url+="?"+this.queryStr(t.params)),this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":default:this.isSurge()&&this.isNeedRewrite&&(t.headers=t.headers||{},Object.assign(t.headers,{"X-Surge-Skip-Scripting":!1})),$httpClient.get(t,(t,s,a)=>{!t&&s&&(s.body=a,s.statusCode=s.status?s.status:s.statusCode,s.status=s.statusCode),e(t,s,a)});break;case"Quantumult X":this.isNeedRewrite&&(t.opts=t.opts||{},Object.assign(t.opts,{hints:!1})),$task.fetch(t).then(t=>{const{statusCode:s,statusCode:a,headers:r,body:i,bodyBytes:o}=t;e(null,{status:s,statusCode:a,headers:r,body:i,bodyBytes:o},i,o)},t=>e(t&&t.error||"UndefinedError"));break;case"Node.js":let s=require("iconv-lite");this.initGotEnv(t),this.got(t).on("redirect",(t,e)=>{try{if(t.headers["set-cookie"]){const s=t.headers["set-cookie"].map(this.cktough.Cookie.parse).toString();s&&this.ckjar.setCookieSync(s,null),e.cookieJar=this.ckjar}}catch(t){this.logErr(t)}}).then(t=>{const{statusCode:a,statusCode:r,headers:i,rawBody:o}=t,n=s.decode(o,this.encoding);e(null,{status:a,statusCode:r,headers:i,rawBody:o,body:n},n)},t=>{const{message:a,response:r}=t;e(a,r,r&&s.decode(r.rawBody,this.encoding))})}}post(t,e=(()=>{})){const s=t.method?t.method.toLocaleLowerCase():"post";switch(t.body&&t.headers&&!t.headers["Content-Type"]&&!t.headers["content-type"]&&(t.headers["content-type"]="application/x-www-form-urlencoded"),t.headers&&(delete t.headers["Content-Length"],delete t.headers["content-length"]),this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":default:this.isSurge()&&this.isNeedRewrite&&(t.headers=t.headers||{},Object.assign(t.headers,{"X-Surge-Skip-Scripting":!1})),$httpClient[s](t,(t,s,a)=>{!t&&s&&(s.body=a,s.statusCode=s.status?s.status:s.statusCode,s.status=s.statusCode),e(t,s,a)});break;case"Quantumult X":t.method=s,this.isNeedRewrite&&(t.opts=t.opts||{},Object.assign(t.opts,{hints:!1})),$task.fetch(t).then(t=>{const{statusCode:s,statusCode:a,headers:r,body:i,bodyBytes:o}=t;e(null,{status:s,statusCode:a,headers:r,body:i,bodyBytes:o},i,o)},t=>e(t&&t.error||"UndefinedError"));break;case"Node.js":let a=require("iconv-lite");this.initGotEnv(t);const{url:r,...i}=t;this.got[s](r,i).then(t=>{const{statusCode:s,statusCode:r,headers:i,rawBody:o}=t,n=a.decode(o,this.encoding);e(null,{status:s,statusCode:r,headers:i,rawBody:o,body:n},n)},t=>{const{message:s,response:r}=t;e(s,r,r&&a.decode(r.rawBody,this.encoding))})}}time(t,e=null){const s=e?new Date(e):new Date;let a={"M+":s.getMonth()+1,"d+":s.getDate(),"H+":s.getHours(),"m+":s.getMinutes(),"s+":s.getSeconds(),"q+":Math.floor((s.getMonth()+3)/3),S:s.getMilliseconds()};/(y+)/.test(t)&&(t=t.replace(RegExp.$1,(s.getFullYear()+"").substr(4-RegExp.$1.length)));for(let e in a)new RegExp("("+e+")").test(t)&&(t=t.replace(RegExp.$1,1==RegExp.$1.length?a[e]:("00"+a[e]).substr((""+a[e]).length)));return t}queryStr(t){let e="";for(const s in t){let a=t[s];null!=a&&""!==a&&("object"==typeof a&&(a=JSON.stringify(a)),e+=`${s}=${a}&`)}return e=e.substring(0,e.length-1),e}msg(e=t,s="",a="",r){const i=t=>{switch(typeof t){case void 0:return t;case"string":switch(this.getEnv()){case"Surge":case"Stash":default:return{url:t};case"Loon":case"Shadowrocket":return t;case"Quantumult X":return{"open-url":t};case"Node.js":return}case"object":switch(this.getEnv()){case"Surge":case"Stash":case"Shadowrocket":default:{let e=t.url||t.openUrl||t["open-url"];return{url:e}}case"Loon":{let e=t.openUrl||t.url||t["open-url"],s=t.mediaUrl||t["media-url"];return{openUrl:e,mediaUrl:s}}case"Quantumult X":{let e=t["open-url"]||t.url||t.openUrl,s=t["media-url"]||t.mediaUrl,a=t["update-pasteboard"]||t.updatePasteboard;return{"open-url":e,"media-url":s,"update-pasteboard":a}}case"Node.js":return}default:return}};if(!this.isMute)switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":default:$notification.post(e,s,a,i(r));break;case"Quantumult X":$notify(e,s,a,i(r));break;case"Node.js":}if(!this.isMuteLog){let t=["","==============📣系统通知📣=============="];t.push(e),s&&t.push(s),a&&t.push(a),console.log(t.join("\n")),this.logs=this.logs.concat(t)}}log(...t){t.length>0&&(this.logs=[...this.logs,...t]),console.log(t.join(this.logSeparator))}logErr(t,e){switch(this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":case"Quantumult X":default:this.log("",`❗️${this.name}, 错误!`,t);break;case"Node.js":this.log("",`❗️${this.name}, 错误!`,t.stack)}}wait(t){return new Promise(e=>setTimeout(e,t))}done(t={}){const e=(new Date).getTime(),s=(e-this.startTime)/1e3;switch(this.log("",`🔔${this.name}, 结束! 🕛 ${s} 秒`),this.log(),this.getEnv()){case"Surge":case"Loon":case"Stash":case"Shadowrocket":case"Quantumult X":default:$done(t);break;case"Node.js":process.exit(1)}}}(t,e)}
