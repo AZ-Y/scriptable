@@ -46,46 +46,64 @@ class UserInfo {
     // 签到函数
     async signin() {
         try {
-            const options = {
-                // 签到任务调用签到接口
-                url: `https://wit-api.benq.com.cn/score/sign`,
-                // 请求头, 所有接口通用
-                headers: {
-                    'Accept-Encoding': `gzip,compress,br,deflate`,
-                    'content-type': `application/json`,
-                    'Connection': `keep-alive`,
-                    'Referer': `https://servicewechat.com/wxce10a66cff243e88/24/page-frame.html`,
-                    'Host': `wit-api.benq.com.cn`,
-                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`,
-                    'Authorization': this.token,
-                }
+            const url = `https://wit-api.benq.com.cn/score/sign`;
+            const method = `GET`;
+            const headers = {
+                'Accept-Encoding': `gzip,compress,br,deflate`,
+                'content-type': `application/json`,
+                'Connection': `keep-alive`,
+                'Referer': `https://servicewechat.com/wxce10a66cff243e88/24/page-frame.html`,
+                'Host': `wit-api.benq.com.cn`,
+                'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`,
+                'Authorization': this.token
+            };
+            const body = ``;
+
+            const myRequest = {
+                url: url,
+                method: method,
+                headers: headers,
+                body: body
             };
 
-            // GET方法请求签到
-            let result = await httpRequest(options);
-            console.log(result);
-            if (result?.statusCode === 200) {
-                DoubleLog(`✅ 签到成功！`);
+            let result = await $task.fetch(myRequest);
+
+            console.log(result.statusCode + "\n\n" + result.body);
+
+            if (result.statusCode === 200) {
+                const responseBody = JSON.parse(result.body);
+
+                if (responseBody.code === 200) {
+                    DoubleLog(`✅ 签到成功！`);
+                } else if (responseBody.code === 4028) {
+                    DoubleLog(`⚠️ 已经签到过了，不能重复签到！`);
+                } else {
+                    DoubleLog(`❌ 签到失败: ${responseBody.msg || '未知错误'}`);
+                }
             } else {
-                DoubleLog(`❌ 签到失败!`);
+                DoubleLog(`❌ 请求失败: HTTP ${result.statusCode}`);
             }
         } catch (e) {
             console.log(e);
+            DoubleLog(`❌ 签到失败: ${e.message}`);
         }
     }
 }
 
-// 获取Cookie
-async function getCookie() {
-    if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['Authorization'] || $request.headers['authorization'];
-        if (tokenValue) {
-            $.setdata(tokenValue, ckName);
-            $.msg($.name, "", "获取签到Cookie成功🎉");
-        } else {
-            $.msg($.name, "", "错误获取签到Cookie失败");
-        }
-    }
+// 帮助函数
+function DoubleLog(message) {
+    console.log(message);
+    $.notifyMsg.push(message);
+}
+
+// 随机延迟函数
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+// HTTP请求函数使用$task.fetch()
+function httpRequest(options) {
+    return $task.fetch(options);
 }
 
 // 主程序执行入口
