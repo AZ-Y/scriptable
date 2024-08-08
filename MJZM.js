@@ -105,7 +105,18 @@ function randomInt(min, max) {
 function httpRequest(options) {
     return $task.fetch(options);
 }
-
+// 获取Cookie
+async function getCookie() {
+    if ($request && $request.method != 'OPTIONS') {
+        const tokenValue = $request.headers['Authorization'] || $request.headers['authorization'];
+        if (tokenValue) {
+            $.setdata(tokenValue, ckName);
+            $.msg($.name, "", "获取签到Cookie成功🎉");
+        } else {
+            $.msg($.name, "", "错误获取签到Cookie失败");
+        }
+    }
+}
 // 主程序执行入口
 !(async () => {
     // 没有设置变量, 执行Cookie获取
