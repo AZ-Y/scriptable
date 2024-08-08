@@ -97,28 +97,15 @@ async function main() {
     }
 }
 async function getCookie() {
-    const token = $request.headers['token'];
-    if (!token) {
-        console.log('未找到token头部');
-        return;
-    }
-    const newData = {"token": token};
-    const index = changhong_token.findIndex(e => e.token == newData.token);
-    if (index !== -1) {
-        if (changhong_token[index].token == newData.token) {
-            console.log('token未改变');
-            return;
+    if ($request && $request.method != 'OPTIONS') {
+        const tokenValue = $request.headers['token'] || $request.headers['Token'];
+        if (tokenValue) {
+            $.setdata(tokenValue, ckName);
+            $.msg($.name, "", "获取签到Cookie成功🎉");
         } else {
-            changhong_token[index] = newData;
-            console.log('更新token:', newData.token);
-            $.msg($.name, '更新token成功!', '');
+            $.msg($.name, "", "错误获取签到Cookie失败");
         }
-    } else {
-        changhong_token.push(newData);
-        console.log('新增token:', newData.token);
-        $.msg($.name, '新增token成功!', '');
     }
-    $.setjson(changhong_token, "changhong_token");
 }
 // 主程序执行入口
 !(async () => {
