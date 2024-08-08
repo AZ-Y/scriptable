@@ -1,120 +1,80 @@
-// env.js 全局
-const $ = new Env("欧普照明签到");
+const $ = new Env("欧普照明小程序签到");
+
+// 全局设置
 const ckName = "opple_token";
-//-------------------- 一般不动变量区域 -------------------------------------
-const Notify = 1; // 0为关闭通知, 1为打开通知, 默认为1
-const notify = $.isNode() ? require('./sendNotify') : '';
-let envSplitor = ["@"]; // 多账号分隔符
-let userCookie = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
-let userList = [];
-let userIdx = 0;
-let userCount = 0;
-// 为通知准备的空数组
-$.notifyMsg = [];
-// Bark推送
-$.barkKey = ($.isNode() ? process.env["bark_key"] : $.getdata("bark_key")) || '';
-//---------------------- 自定义变量区域 -----------------------------------
+const activityId = 100000370; // 替换为你的活动ID
 
-class UserInfo {
-    constructor(token) {
-        this.index = ++userIdx;
-        this.token = token;
-        this.ckStatus = true;
+// 获取用户Token
+let userToken = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
+
+// 脚本入口函数
+async function main() {
+    if (!userToken) {
+        $.msg("签到失败", "未获取到有效的Access-Token，请检查环境变量设置。", "错误");
+        return;
     }
 
-    getRandomTime() {
-        return randomInt(1000, 3000);
-    }
+    console.log('\n================== 开始签到 ==================\n');
 
-    // 签到函数
-    async signin() {
-        try {
-            const signinOptions = {
-                url: `https://kfscrm.opple.com/opple/scrm/mkt/activities/sign:join`,
-                method: `POST`,
-                headers: {
-                    'Accept-Encoding': `gzip,compress,br,deflate`,
-                    'Access-Token': this.token,
-                    'Connection': `keep-alive`,
-                    'Content-Type': `application/json`,
-                    'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
-                    'Host': `kfscrm.opple.com`,
-                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
-                },
-                body: `{"activityId":100000370}`
-            };
+    const options = {
+        url: `https://kfscrm.opple.com/opple/scrm/mkt/activities/sign:join`,
+        method: `POST`,
+        headers: {
+            'Accept-Encoding': `gzip,compress,br,deflate`,
+            'Access-Token': userToken,
+            'Connection': `keep-alive`,
+            'Content-Type': `application/json`,
+            'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
+            'Host': `kfscrm.opple.com`,
+            'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
+        },
+        body: JSON.stringify({ activityId: activityId })
+    };
 
-            // 发送签到请求
-            let result = await httpRequest(signinOptions);
-            console.log(result);
-            if (result?.statusCode === 200) {
-                console.log(`✅ 签到成功！`);
-                await this.getPoints();
-            } else {
-                console.log(`❌ 签到失败!`);
-            }
-        } catch (e) {
-            console.log(e);
+    try {
+        const response = await $task.fetch(options);
+        console.log(`状态码: ${response.statusCode}\n\n响应体: ${response.body}`);
+        
+        if (response.statusCode === 200) {
+            $.msg("欧普照明小程序签到成功", "签到成功！", "成功");
+        } else {
+            $.msg("欧普照明小程序签到失败", `签到失败！响应状态码: ${response.statusCode}`, "失败");
         }
-    }
-
-    // 获取积分函数
-    async getPoints() {
-        try {
-            const pointsOptions = {
-                url: `https://kfscrm.opple.com/opple/scrm/mkt/activities/myPoints`,
-                method: `GET`,
-                headers: {
-                    'Accept-Encoding': `gzip,compress,br,deflate`,
-                    'Access-Token': this.token,
-                    'Connection': `keep-alive`,
-                    'Content-Type': `application/json`,
-                    'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
-                    'Host': `kfscrm.opple.com`,
-                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
-                }
-            };
-
-            // 发送获取积分请求
-            let result = await httpRequest(pointsOptions);
-            console.log(result);
-            if (result?.statusCode === 200) {
-                console.log(`🎉 获取积分成功！`);
-                console.log(`积分信息: ${result.body}`);
-            } else {
-                console.log(`❌ 获取积分失败!`);
-            }
-        } catch (e) {
-            console.log(e);
-        }
+    } catch (error) {
+        console.log(error);
+        $.msg("欧普照明小程序签到失败", `发生错误: ${error.message}`, "错误");
     }
 }
 
-// HTTP请求函数
-function httpRequest(options) {
-    return new Promise((resolve, reject) => {
-        $.get(options, (err, resp, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve({statusCode: resp.statusCode, body: data});
-            }
-        });
-    });
-}
+// 主程序执行入口
+!(async () => {
+    if (typeof $request !== "undefined") {
+        // Cookie获取功能，如果有需要的话
+        await getCookie();
+        return;
+    }
 
-// 获取Cookie
+    // 执行签到任务
+    await main();
+})()
+.finally(() => {
+    $.done(); // 结束脚本
+});
+
+// 获取Cookie的函数（如果需要）
 async function getCookie() {
-    if ($request && $request.method != 'OPTIONS') {
+    if ($request && $request.method !== 'OPTIONS') {
         const tokenValue = $request.headers['Access-Token'] || $request.headers['access-token'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
-            $.msg($.name, "", "获取签到Cookie成功🎉");
+            $.msg($.name, "", "获取签到Token成功🎉");
         } else {
-            $.msg($.name, "", "错误获取签到Cookie失败");
+            $.msg($.name, "", "获取签到Token失败");
         }
     }
 }
+
+
 
 // 主程序执行入口
 !(async () => {
@@ -126,12 +86,19 @@ async function getCookie() {
 
     // 未检测到ck，退出
     if (!(await checkEnv())) { throw new Error(`❌未检测到ck，请添加环境变量`) };
+
+    // 添加用户信息到 userList
+    if (userCookie) {
+        userList.push(new UserInfo(userCookie));
+    }
+
     if (userList.length > 0) {
         await main();
     }
+
     if ($.barkKey) { // 如果已填写Bark Key
         await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); // 推送Bark通知
-    };
+    }
 })()
     .catch((e) => $.notifyMsg.push(e.message || e)) // 捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
     .finally(async () => {
