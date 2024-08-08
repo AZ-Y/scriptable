@@ -1,4 +1,4 @@
-const $ = new Env("欧普照明小程序签到");
+const $ = new Env("欧明小程序签到");
 
 // 全局设置
 const ckName = "opple_token";
