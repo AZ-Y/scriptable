@@ -1,80 +1,105 @@
-const $ = new Env("欧明小程序签到");
-
-// 全局设置
+// env.js 全局
+const $ = new Env("欧普照明小程序签到");
 const ckName = "opple_token";
-const activityId = 100000370; // 替换为你的活动ID
+//-------------------- 一般不动变量区域 -------------------------------------
+const Notify = 1; // 0为关闭通知, 1为打开通知, 默认为1
+const notify = $.isNode() ? require('./sendNotify') : '';
+let envSplitor = ["@"]; // 多账号分隔符
+let userCookie = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
+let userList = [];
+let userIdx = 0;
+let userCount = 0;
+// 为通知准备的空数组
+$.notifyMsg = [];
+// Bark推送
+$.barkKey = ($.isNode() ? process.env["bark_key"] : $.getdata("bark_key")) || '';
+//---------------------- 自定义变量区域 -----------------------------------
 
-// 获取用户Token
-let userToken = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
-
-// 脚本入口函数
+// 脚本入口函数main()
 async function main() {
-    if (!userToken) {
-        $.msg("签到失败", "未获取到有效的Access-Token，请检查环境变量设置。", "错误");
-        return;
-    }
-
-    console.log('\n================== 开始签到 ==================\n');
-
-    const options = {
-        url: `https://kfscrm.opple.com/opple/scrm/mkt/activities/sign:join`,
-        method: `POST`,
-        headers: {
-            'Accept-Encoding': `gzip,compress,br,deflate`,
-            'Access-Token': userToken,
-            'Connection': `keep-alive`,
-            'Content-Type': `application/json`,
-            'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
-            'Host': `kfscrm.opple.com`,
-            'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
-        },
-        body: JSON.stringify({ activityId: activityId })
-    };
-
-    try {
-        const response = await $task.fetch(options);
-        console.log(`状态码: ${response.statusCode}\n\n响应体: ${response.body}`);
-        
-        if (response.statusCode === 200) {
-            $.msg("欧普照明小程序签到成功", "签到成功！", "成功");
+    console.log('\n================== 任务 ==================\n');
+    let taskall = [];
+    for (let user of userList) {
+        if (user.ckStatus) {
+            // ck未过期，开始执行任务
+            console.log(`随机延迟${user.getRandomTime()}ms`);
+            taskall.push(await user.signin());
+            await $.wait(user.getRandomTime());
         } else {
-            $.msg("欧普照明小程序签到失败", `签到失败！响应状态码: ${response.statusCode}`, "失败");
+            // 将ck过期消息存入消息数组
+            $.notifyMsg.push(`❌账号${user.index} >> Check ck error!`);
         }
-    } catch (error) {
-        console.log(error);
-        $.msg("欧普照明小程序签到失败", `发生错误: ${error.message}`, "错误");
     }
 }
 
-// 主程序执行入口
-!(async () => {
-    if (typeof $request !== "undefined") {
-        // Cookie获取功能，如果有需要的话
-        await getCookie();
-        return;
+class UserInfo {
+    constructor(token) {
+        this.index = ++userIdx;
+        this.token = token;
+        this.ckStatus = true;
     }
 
-    // 执行签到任务
-    await main();
-})()
-.finally(() => {
-    $.done(); // 结束脚本
-});
+    getRandomTime() {
+        return randomInt(1000, 3000);
+    }
 
-// 获取Cookie的函数（如果需要）
+    // 签到函数
+    async signin() {
+        try {
+            const options = {
+                // 签到任务调用签到接口
+                url: `https://kfscrm.opple.com/opple/scrm/mkt/activities/sign:join`,
+                // 请求头, 所有接口通用
+                headers: {
+                    'Accept-Encoding': `gzip,compress,br,deflate`,
+                    'Access-Token': this.token,
+                    'Connection': `keep-alive`,
+                    'content-type': `application/json`,
+                    'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
+                    'Host': `kfscrm.opple.com`,
+                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
+                },
+                body: `{"activityId":100000370}`
+            };
+
+            // 使用 $task.fetch 发送请求
+            let result = await $task.fetch(options);
+            
+            // 确保响应体可以被正确解析
+            let responseBody = '';
+            try {
+                responseBody = JSON.parse(result.body);
+            } catch (e) {
+                responseBody = result.body;
+            }
+            
+            console.log(`状态码: ${result.statusCode}`);
+            console.log(`响应体: ${responseBody}`);
+
+            // 检查响应体
+            if (result.statusCode === 200 && responseBody.ecode === 0) {
+                DoubleLog(`✅ 签到成功！`);
+            } else {
+                DoubleLog(`❌ 签到失败! 响应体: ${JSON.stringify(responseBody)}`);
+            }
+        } catch (e) {
+            console.log(`错误: ${e.message || e}`);
+        }
+    }
+}
+
+// 获取Cookie
 async function getCookie() {
-    if ($request && $request.method !== 'OPTIONS') {
+    if ($request && $request.method != 'OPTIONS') {
         const tokenValue = $request.headers['Access-Token'] || $request.headers['access-token'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
-            $.msg($.name, "", "获取签到Token成功🎉");
+            $.msg($.name, "", "获取签到Cookie成功🎉");
         } else {
-            $.msg($.name, "", "获取签到Token失败");
+            $.msg($.name, "", "错误获取签到Cookie失败");
         }
     }
 }
-
-
 
 // 主程序执行入口
 !(async () => {
@@ -86,25 +111,19 @@ async function getCookie() {
 
     // 未检测到ck，退出
     if (!(await checkEnv())) { throw new Error(`❌未检测到ck，请添加环境变量`) };
-
-    // 添加用户信息到 userList
-    if (userCookie) {
-        userList.push(new UserInfo(userCookie));
-    }
-
     if (userList.length > 0) {
         await main();
     }
-
     if ($.barkKey) { // 如果已填写Bark Key
         await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); // 推送Bark通知
-    }
+    };
 })()
     .catch((e) => $.notifyMsg.push(e.message || e)) // 捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
     .finally(async () => {
         await SendMsg($.notifyMsg.join('\n')) // 带上总结推送通知
         $.done(); // 调用Surge、QX内部特有的函数, 用于退出脚本执行
     });
+
 
 /** --------------------------------辅助函数区域------------------------------------------- */
 
