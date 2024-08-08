@@ -1,5 +1,5 @@
-const $ = new Env("长虹美菱签到");
-const ckName = "changhong_token";
+ const $ = new Env("长虹美菱签到");
+const ckName = "";
 
 //-------------------- 一般不动变量区域 -------------------------------------
 const Notify = 1; // 0为关闭通知,1为打开通知,默认为1
@@ -97,17 +97,28 @@ async function main() {
     }
 }
 async function getCookie() {
-    if ($request && $request.method != 'OPTIONS') {
-        const url = $request.url; // 获取请求的URL
-        const tokenValue = url.match(/access_token=([^&#]+)/); // 从URL中提取token参数
-
-        if (tokenValue && tokenValue[1]) {
-            $.setdata(tokenValue[1], ckName); // 存储token值到Cookie，这里假设Cookie的名称为"JDD"
-            $.msg($.name, "", "获取签到Cookie成功🎉");
-        } else {
-            $.msg($.name, "", "错误获取签到Cookie失败");
-        }
+    const token = $request.headers['token'];
+    if (!token) {
+        console.log('未找到token头部');
+        return;
     }
+    const newData = {"token": token};
+    const index = changhong_token.findIndex(e => e.token == newData.token);
+    if (index !== -1) {
+        if (changhong_token[index].token == newData.token) {
+            console.log('token未改变');
+            return;
+        } else {
+            changhong_token[index] = newData;
+            console.log('更新token:', newData.token);
+            $.msg($.name, '更新token成功!', '');
+        }
+    } else {
+        changhong_token.push(newData);
+        console.log('新增token:', newData.token);
+        $.msg($.name, '新增token成功!', '');
+    }
+    $.setjson(changhong_token, "changhong_token");
 }
 // 主程序执行入口
 !(async () => {
