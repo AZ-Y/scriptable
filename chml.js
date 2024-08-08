@@ -1,5 +1,5 @@
  const $ = new Env("长虹美菱签到");
-const ckName = "";
+const ckName = "changhong_token";
 
 //-------------------- 一般不动变量区域 -------------------------------------
 const Notify = 1; // 0为关闭通知,1为打开通知,默认为1
