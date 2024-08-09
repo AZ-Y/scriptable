@@ -1,8 +1,8 @@
 // env.js 全局
-const $ = new Env("欧普照明小程序签到");
-const ckName = "opple_token";
+const $ = new Env("欧普照明签到");
+const ckName = "opple_data";
 //-------------------- 一般不动变量区域 -------------------------------------
-const Notify = 1; // 0为关闭通知, 1为打开通知, 默认为1
+const Notify = 1; // 0为关闭通知,1为打开通知,默认为1
 const notify = $.isNode() ? require('./sendNotify') : '';
 let envSplitor = ["@"]; // 多账号分隔符
 let userCookie = ($.isNode() ? process.env[ckName] : $.getdata(ckName)) || '';
@@ -33,57 +33,46 @@ async function main() {
 }
 
 class UserInfo {
-    constructor(token) {
+    constructor(str) {
         this.index = ++userIdx;
-        this.token = token;
+        this.token = str;
         this.ckStatus = true;
+        this.drawStatus = true;
     }
-
     getRandomTime() {
         return randomInt(1000, 3000);
     }
-
     // 签到函数
     async signin() {
         try {
             const options = {
                 // 签到任务调用签到接口
                 url: `https://kfscrm.opple.com/opple/scrm/mkt/activities/sign:join`,
-                // 请求头, 所有接口通用
+                // 请求头
                 headers: {
-                    'Accept-Encoding': `gzip,compress,br,deflate`,
-                    'Access-Token': this.token,
-                    'Connection': `keep-alive`,
-                    'content-type': `application/json`,
-                    'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
+                    'Accept': `*/*`,
+                    'Origin': `https://kfscrm.opple.com`,
+                    'Accept-Encoding': `gzip, deflate, br`,
+                    'Cookie': this.token,
+                    'Content-Type': `application/json`,
                     'Host': `kfscrm.opple.com`,
-                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
+                    'Connection': `keep-alive`,
+                    'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.50(0x18003231) NetType/4G Language/zh_CN miniProgram/wx70eff0ac6e018724`,
+                    'Referer': `https://servicewechat.com/wx17a032a586c19379/162/page-frame.html`,
+                    'Accept-Language': `zh-CN,zh-Hans;q=0.9`
                 },
-                body: `{"activityId":100000370}`
+                body: JSON.stringify({ activityId: 100000370 })
             };
-
-            // 使用 $task.fetch 发送请求
-            let result = await $task.fetch(options);
-            
-            // 确保响应体可以被正确解析
-            let responseBody = '';
-            try {
-                responseBody = JSON.parse(result.body);
-            } catch (e) {
-                responseBody = result.body;
-            }
-            
-            console.log(`状态码: ${result.statusCode}`);
-            console.log(`响应体: ${responseBody}`);
-
-            // 检查响应体
-            if (result.statusCode === 200 && responseBody.ecode === 0) {
+            // POST方法
+            let result = await httpRequest(options);
+            console.log(result);
+            if (result?.ok) {
                 DoubleLog(`✅ 签到成功！`);
             } else {
-                DoubleLog(`❌ 签到失败! 响应体: ${JSON.stringify(responseBody)}`);
+                DoubleLog(`❌ 签到失败! ${result?.chnDesc}`);
             }
         } catch (e) {
-            console.log(`错误: ${e.message || e}`);
+            console.log(e);
         }
     }
 }
@@ -91,7 +80,7 @@ class UserInfo {
 // 获取Cookie
 async function getCookie() {
     if ($request && $request.method != 'OPTIONS') {
-        const tokenValue = $request.headers['Access-Token'] || $request.headers['access-token'];
+        const tokenValue = $request.headers['Token'] || $request.headers['token'];
         if (tokenValue) {
             $.setdata(tokenValue, ckName);
             $.msg($.name, "", "获取签到Cookie成功🎉");
@@ -103,14 +92,13 @@ async function getCookie() {
 
 // 主程序执行入口
 !(async () => {
-    // 没有设置变量, 执行Cookie获取
+    // 没有设置变量，执行Cookie获取
     if (typeof $request != "undefined") {
         await getCookie();
         return;
     }
-
     // 未检测到ck，退出
-    if (!(await checkEnv())) { throw new Error(`❌未检测到ck，请添加环境变量`) };
+    if (!(await checkEnv())) { throw new Error(`❌ 未检测到ck，请添加环境变量`) };
     if (userList.length > 0) {
         await main();
     }
@@ -118,12 +106,11 @@ async function getCookie() {
         await BarkNotify($, $.barkKey, $.name, $.notifyMsg.join('\n')); // 推送Bark通知
     };
 })()
-    .catch((e) => $.notifyMsg.push(e.message || e)) // 捕获登录函数等抛出的异常, 并把原因添加到全局变量(通知)
+    .catch((e) => $.notifyMsg.push(e.message || e)) // 捕获登录函数等抛出的异常，并把原因添加到全局变量(通知)
     .finally(async () => {
         await SendMsg($.notifyMsg.join('\n')) // 带上总结推送通知
-        $.done(); // 调用Surge、QX内部特有的函数, 用于退出脚本执行
+        $.done(); // 调用Surge、QX内部特有的函数，用于退出脚本执行
     });
-
 
 /** --------------------------------辅助函数区域------------------------------------------- */
 
