@@ -43,10 +43,7 @@ let failedNotices = []; // 用于存储失败原因的数组
     if (failedNotices.length > 0) {
         $.msg($.name, '签到失败原因', failedNotices.join('\n'));
     }
-    $.msg($.name, '签到结束', `🔔Babycare, 结束! 🕛 ${((performance.now() - start) / 1000).toFixed(3)} 秒`);
 })().catch((e) => {$.log(e)}).finally(() => {$.done();});
-
-let start = performance.now(); // 记录签到开始时间
 
 async function main() {
     console.log('Babycare签到开始');
@@ -60,28 +57,29 @@ async function main() {
         }
     }
 }
+
 async function getCookie() {
     const authorization = $request.headers['Authorization'];
     if (!authorization) {
         console.log('未找到Authorization头部');
         return;
     }
+
+    const accountId = authorization.substring(0, 20); // 根据你的需求调整截取的长度
     const newData = {"authorization": authorization};
-    const index = Babycare.findIndex(e => e.authorization == newData.authorization);
+
+    const index = Babycare.findIndex(e => e.authorization.startsWith(accountId));
+
     if (index !== -1) {
-        if (Babaycare[index].authorization == newData.authorization) {
-            console.log('Authorization未改变');
-            return;
-        } else {
-            Babycare[index] = newData;
-            console.log('更新authorization:', newData.authorization);
-            $.msg($.name, '更新authorization成功!', '');
-        }
+        Babycare[index] = newData;
+        console.log('更新authorization:', newData.authorization);
+        $.msg($.name, '更新authorization成功!', '');
     } else {
         Babycare.push(newData);
         console.log('新增authorization:', newData.authorization);
         $.msg($.name, '新增authorization成功!', '');
     }
+
     $.setjson(Babycare, "Babycare");
 }
 
