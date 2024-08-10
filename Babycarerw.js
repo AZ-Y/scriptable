@@ -31,7 +31,7 @@
 const $ = new Env('Babycare');
 const Babycare = ($.isNode() ? JSON.parse(process.env.Babycare) : $.getjson("Babycare")) || [];
 let Utils = undefined;
-let failedNotices = []; // 用于存储失败原因的数组
+let results = []; // 存储结果的数组
 
 !(async () => {
     if (typeof $request != "undefined") {
@@ -39,10 +39,10 @@ let failedNotices = []; // 用于存储失败原因的数组
     } else {
         await main();
     }
-    // 所有签到操作结束后发送通知
-    if (failedNotices.length > 0) {
-        $.msg($.name, '签到失败原因', failedNotices.join('\n'));
-    }
+    // 所有签到操作结束后查询积分
+    await checkPoints();
+    // 最后统一通知所有结果
+    $.msg($.name, '签到及积分查询结果', results.join('\n'));
 })().catch((e) => {$.log(e)}).finally(() => {$.done();});
 
 async function main() {
@@ -53,7 +53,9 @@ async function main() {
         console.log(`开始签到，authorization: ${authorization}`);
         let sign = await commonPost('https://api.bckid.com.cn/operation/front/bonus/userSign/v3/sign', {}, authorization);
         if (sign.code !== 200) {
-            failedNotices.push(`签到失败: ${sign.message || '未知原因'}`); // 收集失败原因
+            results.push(`签到失败: ${sign.message || '未知原因'}`);
+        } else {
+            results.push('签到成功');
         }
     }
 }
@@ -110,6 +112,58 @@ async function commonPost(url, body, authorization) {
             }
         });
     });
+}
+
+// 修改后的函数，用于查询当前积分并合并结果
+async function checkPoints() {
+    console.log('开始查询当前积分');
+    for (const item of Babycare) {
+        const authorization = item.authorization;
+        const url = `https://api.bckid.com.cn/operation/front/bonus/userBonus/getUserBonus`;
+        const method = `POST`;
+        const headers = {
+            'Accept-Encoding' : `gzip,compress,br,deflate`,
+            'content-type' : `application/json`,
+            'Connection' : `keep-alive`,
+            'Referer' : `https://servicewechat.com/wx0e31d878c0fcb362/93/page-frame.html`,
+            'user-agent-bckid' : `bckid; miniProgram; 1.12.66; iPhone iPhone 13<iPhone14,5>; iOS 16.1.2; ;1005_1000000;`,
+            'Host' : `api.bckid.com.cn`,
+            'Authorization' : authorization,
+            'User-Agent' : `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`
+        };
+        const body = `{}`;
+        
+        const myRequest = {
+            url: url,
+            method: method,
+            headers: headers,
+            body: body
+        };
+
+        await new Promise(resolve => {
+            $.post(myRequest, (err, resp, data) => {
+                try {
+                    if (err) {
+                        console.log(`积分查询请求失败: ${JSON.stringify(err)}`);
+                    } else {
+                        const response = JSON.parse(data);
+                        if (response.code === "200" && response.body) {
+                            const points = response.body.userBonus;
+                            console.log(`当前积分: ${points}`);
+                            results.push(`当前积分为: ${points}`);
+                        } else {
+                            console.log('积分查询失败:', response.message);
+                            results.push(`积分查询失败: ${response.message}`);
+                        }
+                    }
+                } catch (e) {
+                    $.logErr(e, resp);
+                } finally {
+                    resolve();
+                }
+            });
+        });
+    }
 }
 async function loadUtils() {
     let code = ($.isNode() ? process.env.Utils_Code : $.getdata('Utils_Code')) || '';
