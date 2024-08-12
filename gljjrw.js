@@ -45,41 +45,71 @@ class UserInfo {
 
     // 签到函数
     async signin() {
-        try {
-            const signInUrl = `https://member.guoyuejiu.com/api/sign/daily/sign`;
-            const userInfoUrl = `https://member.guoyuejiu.com/api/user/info`;
-            const headers = {
-                'Accept-Encoding': `gzip,compress,br,deflate`,
-                'content-type': `application/json`,
-                'Connection': `keep-alive`,
-                'Authorization': this.token
-            };
+    try {
+        const signUrl = `https://member.guoyuejiu.com/api/sign/daily/sign`;
+        const userInfoUrl = `https://member.guoyuejiu.com/api/user/info`;
+        const headers = {
+            'Accept-Encoding': `gzip,compress,br,deflate`,
+            'content-type': `application/json`,
+            'Connection': `keep-alive`,
+            'User-Agent': `Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49(0x18003131) NetType/4G Language/zh_CN`,
+            'Authorization': this.token
+        };
 
-            const signInRequest = {
-                url: signInUrl,
-                method: 'GET',
-                headers: headers
-            };
+        const signRequest = {
+            url: signUrl,
+            method: 'GET',
+            headers: headers
+        };
 
-            const signInResult = await httpRequest(signInRequest);
+        let signResult = await $task.fetch(signRequest);
+        console.log('Sign Response:', JSON.stringify(signResult));
 
-            if (signInResult.statusCode === 200) {
-                const signInBody = JSON.parse(signInResult.body);
-                if (signInBody.code === 0) {
-                    DoubleLog(`✅ 签到成功！`);
-                    // 获取积分信息
-                    await this.getUserInfo();
+        if (signResult.statusCode === 200) {
+            const signResponseBody = JSON.parse(signResult.body);
+            console.log('Parsed Sign Response Body:', JSON.stringify(signResponseBody));
+
+            if (signResponseBody.code === 0) {
+                let score = signResponseBody.data && signResponseBody.data.recordList && signResponseBody.data.recordList[0] && signResponseBody.data.recordList[0].score;
+
+                if (score !== undefined) {
+                    // 获取总积分
+                    const userInfoRequest = {
+                        url: userInfoUrl,
+                        method: 'GET',
+                        headers: headers
+                    };
+
+                    let userInfoResult = await $task.fetch(userInfoRequest);
+                    console.log('User Info Response:', JSON.stringify(userInfoResult));
+
+                    if (userInfoResult.statusCode === 200) {
+                        const userInfoResponseBody = JSON.parse(userInfoResult.body);
+                        console.log('Parsed User Info Response Body:', JSON.stringify(userInfoResponseBody));
+
+                        if (userInfoResponseBody.code === 0) {
+                            let totalScore = userInfoResponseBody.data && userInfoResponseBody.data.score;
+                            DoubleLog(`✅ 签到成功！获得积分: ${score}，总积分: ${totalScore}`);
+                        } else {
+                            DoubleLog(`⚠️ 获取总积分失败: ${userInfoResponseBody.message}`);
+                        }
+                    } else {
+                        DoubleLog(`❌ 请求总积分失败: HTTP ${userInfoResult.statusCode}`);
+                    }
                 } else {
-                    DoubleLog(`❌ 签到失败: ${signInBody.message || '未知错误'}`);
+                    DoubleLog(`⚠️ 签到成功，但未找到积分信息`);
                 }
             } else {
-                DoubleLog(`❌ 请求失败: HTTP ${signInResult.statusCode}`);
+                DoubleLog(`❌ 签到失败: ${signResponseBody.message}`);
             }
-        } catch (e) {
-            console.log(e);
-            DoubleLog(`❌ 签到失败: ${e.message}`);
+        } else {
+            DoubleLog(`❌ 请求失败: HTTP ${signResult.statusCode}`);
         }
+    } catch (e) {
+        console.log('Error during request:', e);
+        DoubleLog(`❌ 请求失败: ${e.message}`);
     }
+}
 
     // 获取用户信息，显示积分情况
     async getUserInfo() {
