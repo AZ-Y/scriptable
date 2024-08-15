@@ -1,5 +1,5 @@
 // env.js 全局
-const $ = new Env("快乐达签到");
+const $ = new Env("KLD");
 const ckName = "kld_token";
 //-------------------- 一般不动变量区域 -------------------------------------
 const Notify = 1; // 0为关闭通知, 1为打开通知, 默认为1
