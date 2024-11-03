@@ -3,7 +3,7 @@
   "name": "JD Cookie",
   "author": "@AZ-Y",
   "icon": "https://raw.githubusercontent.com/Orz-3/mini/master/jd.png",
-  "repo": "https://github.com/your-username/your-repo",
+  "repo": "https://github.com/AZ-Y/scriptable",
   "apps": [{
     "id": "jd_cookie",
     "name": "JD Cookie",
@@ -16,7 +16,7 @@
       "desc": "京东 Cookie,多个账号用&隔开"
     }],
     "author": "@AZ-Y",
-    "repo": "https://github.com/your-username/your-repo",
+    "repo": "https://github.com/AZ-Y/scriptable",
     "script": "https://raw.githubusercontent.com/your-username/your-repo/main/jd-cookie.js"
   }]
 }
