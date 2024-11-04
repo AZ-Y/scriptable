@@ -7,42 +7,48 @@
 [MITM]
 hostname = %APPEND% api.m.jd.com
 
-====================================
-*/
-const $ = new Env('Jd cookie');
-$.jdCookieKey = 'jdCookie';
-$.jdCookie = $.getdata($.jdCookieKey);
-$.isDebug = $.getdata('is_debug');
+====================================*/
+
+const $ = new Env('JD Cookie');
 
 function getAndStoreJdCookie() {
   try {
     let rawCookie = $request.headers['Cookie'] || $request.headers['cookie'];
+    console.log('获取的 Cookie:', rawCookie);  // 打印获取的 Cookie
+
     if (rawCookie) {
       let ptPinMatch = rawCookie.match(/pt_pin=([^;]+);/);
       let ptKeyMatch = rawCookie.match(/pt_key=([^;]+);/);
+      
       if (ptPinMatch && ptKeyMatch) {
         let ptPin = ptPinMatch[1];
         let jdCookie = `pt_pin=${ptPin};pt_key=${ptKeyMatch[1]};`;
-        let previousJdCookie = $.getdata($.jdCookieKey);
+        console.log('要保存的 JD Cookie:', jdCookie); // 日志
+
+        let previousJdCookie = $.getdata(`jdCookie_${ptPin}`);
+        console.log('之前的 JD Cookie:', previousJdCookie); // 打印之前的 Cookie
+
         if (jdCookie !== previousJdCookie) {
-          $.setdata(jdCookie, $.jdCookieKey);
+          $.setdata(jdCookie, `jdCookie_${ptPin}`);
+          console.log('JD Cookie 已保存:', jdCookie); // 日志
+
           if (previousJdCookie) {
-            $.notifySuccess(`JD Cookie 已更新`, jdCookie);
+            $.msg(`JD Cookie 已更新`, `账号: ${ptPin}`, jdCookie);
           } else {
-            $.notifySuccess(`新增 JD Cookie`, jdCookie);
+            $.msg(`新增 JD Cookie`, `账号: ${ptPin}`, jdCookie);
           }
         } else {
-          $.log(`JD Cookie 未发生变化`);
+          $.log(`JD Cookie 未发生变化, 账号: ${ptPin}`);
         }
       } else {
-        $.notifyError('错误', '无法从 Cookie 中提取 pt_pin 或 pt_key');
+        $.msg('错误', '', '无法从 Cookie 中提取 pt_pin 或 pt_key');
       }
     } else {
-      $.notifyError('错误', '无法获取 Cookie');
+      $.msg('错误', '', '无法获取 Cookie');
     }
   } catch (e) {
     $.logErr(e);
-    $.notifyError('错误', '获取 Cookie 出现异常');
+    $.msg('错误', '', '获取 Cookie 出现异常');
   } finally {
     $.done({});
   }
@@ -50,168 +56,155 @@ function getAndStoreJdCookie() {
 
 getAndStoreJdCookie();
 
-function Env(t, e) {
-  class s {
-    constructor(t) {
-      this.env = t
+function Env(name, options) {
+  class Request {
+    constructor(env) {
+      this.env = env;
     }
-
-    send(t, e = "GET") {
-      t = "string" == typeof t ? {
-        url: t
-      } : t;
-      let s = this.get;
-      return "POST" === e && (s = this.post), new Promise((e, i) => {
-        s.call(this.env, t, ((t, s, o) => {
-          t ? i(t) : e(s)
-        }))
-      })
+    send(url, method = "GET") {
+      url = typeof url === "string" ? { url } : url;
+      let sendMethod = this.get;
+      if (method === "POST") {
+        sendMethod = this.post;
+      }
+      return new Promise((resolve, reject) => {
+        sendMethod.call(this.env, url, (error, response, result) => {
+          error ? reject(error) : resolve(result);
+        });
+      });
     }
-
-    get(t) {
-      return this.send.call(this.env, t)
+    get(url) {
+      return this.send.call(this, url);
     }
-
-    post(t) {
-      return this.send.call(this.env, t, "POST")
+    post(url) {
+      return this.send.call(this, url, "POST");
     }
   }
 
   return new class {
-    constructor(t, e) {
-      this.name = t, this.http = new s(this), this.data = null, this.dataFile = "box.dat", this.logs = [], this.isMute = !1, this.isNeedRewrite = !1, this.logSeparator = "\n", this.encoding = "utf-8", this.startTime = (new Date).getTime(), Object.assign(this, e), this.log("", `🔔${this.name}, 开始!`)
+    constructor(name, options) {
+      this.name = name;
+      this.http = new Request(this);
+      this.data = null;
+      this.dataFile = "box.dat";
+      this.logs = [];
+      this.isMute = false;
+      this.isNeedRewrite = false;
+      this.logSeparator = "\n";
+      this.encoding = "utf-8";
+      this.startTime = (new Date).getTime();
+      Object.assign(this, options);
+      this.log("", `🔔${this.name}, 开始!`);
     }
 
-    isNode() {
-      return "undefined" != typeof module && !!module.exports
-    }
+    isNode() { return typeof module !== "undefined" && !!module.exports; }
+    isQuanX() { return typeof $task !== "undefined"; }
+    isSurge() { return typeof $httpClient !== "undefined" && typeof $loon === "undefined"; }
+    isLoon() { return typeof $loon !== "undefined"; }
+    isJSBox() { return typeof $app !== "undefined" && typeof $http !== "undefined"; }
 
-    isQuanX() {
-      return "undefined" != typeof $task
-    }
-
-    isSurge() {
-      return "undefined" != typeof $httpClient && "undefined" == typeof $loon
-    }
-
-    isLoon() {
-      return "undefined" != typeof $loon
-    }
-
-    isJSBox() {
-      return "undefined" != typeof $app && "undefined" != typeof $http
-    }
-
-    getdata(t) {
+    getdata(key) {
       if (this.isNode()) {
-        this.fs = this.fs ? this.fs : require("fs"), this.path = this.path ? this.path : require("path");
-        const e = this.path.resolve(this.dataFile),
-          s = this.path.resolve(process.cwd(), this.dataFile),
-          i = this.fs.existsSync(e),
-          o = !i && this.fs.existsSync(s);
-        if (i || o) {
-          const i = i ? e : s;
+        this.fs = this.fs || require("fs");
+        this.path = this.path || require("path");
+        const filePath = this.path.resolve(this.dataFile);
+        const cwdPath = this.path.resolve(process.cwd(), this.dataFile);
+        const fileExists = this.fs.existsSync(filePath) || this.fs.existsSync(cwdPath);
+        
+        if (fileExists) {
+          const fileUsed = this.fs.existsSync(filePath) ? filePath : cwdPath;
           try {
-            return JSON.parse(this.fs.readFileSync(i))
-          } catch (t) {
-            return {}
+            return JSON.parse(this.fs.readFileSync(fileUsed));
+          } catch (error) {
+            return {};
           }
-        } else return {}
-      } else return {}
+        } else return {};
+      } else return {};
     }
 
-    setdata(t, e) {
+    setdata(value, key) {
       if (this.isNode()) {
-        this.fs = this.fs ? this.fs : require("fs"), this.path = this.path ? this.path : require("path");
-        const s = this.path.resolve(this.dataFile),
-          i = this.path.resolve(process.cwd(), this.dataFile),
-          o = this.fs.existsSync(s),
-          r = !o && this.fs.existsSync(i),
-          a = JSON.stringify(t);
-        o ? this.fs.writeFileSync(s, a) : r ? this.fs.writeFileSync(i, a) : this.fs.writeFileSync(s, a)
-      } else this.data = this.data ? this.data : {};
-      return this.data[e] = t, this.data
+        this.fs = this.fs || require("fs");
+        this.path = this.path || require("path");
+        const filePath = this.path.resolve(this.dataFile);
+        const cwdPath = this.path.resolve(process.cwd(), this.dataFile);
+        const fileExists = this.fs.existsSync(filePath) || this.fs.existsSync(cwdPath);
+        
+        const jsonData = JSON.stringify(value);
+        if (fileExists) {
+          if (this.fs.existsSync(filePath)) {
+            this.fs.writeFileSync(filePath, jsonData);
+          } else {
+            this.fs.writeFileSync(cwdPath, jsonData);
+          }
+        } else {
+          this.fs.writeFileSync(filePath, jsonData);
+        }
+      } else {
+        this.data = this.data || {};
+        return (this.data[key] = value, this.data);
+      }
     }
 
-    getval(t) {
-      return this.getdata(t)
-    }
+    getval(key) { return this.getdata(key); }
+    setval(value, key) { return this.setdata(value, key); }
 
-    setval(t, e) {
-      return this.setdata(t, e)
-    }
+    get(url, options) { return this.send.call(this, url, options); }
+    post(url, options) { return this.send.call(this, url, "POST", options); }
 
-    get(t, e) {
-      return this.send.call(this, t, e)
-    }
-
-    post(t, e) {
-      return this.send.call(this, t, "POST", e)
-    }
-
-    msg(e = this.name, s = "", i = "", o = {}) {
-      const r = t => {
-        if (!t) return t;
-        if ("string" == typeof t) return this.isLoon() ? t : this.isQuanX() ? {
-          "open-url": t
-        } : this.isSurge() ? {
-          url: t
-        } : void 0;
-        if ("object" == typeof t) {
+    msg(title = this.name, subtitle = "", body = "", options = {}) {
+      const formatOptions = (opts) => {
+        if (!opts) return opts;
+        if (typeof opts === "string") {
+          return this.isLoon() ? opts : this.isQuanX() ? { "open-url": opts } : this.isSurge() ? { url: opts } : void 0;
+        }
+        if (typeof opts === "object") {
           if (this.isLoon()) {
-            let e = t.openUrl || t.url || t["open-url"],
-              s = t.mediaUrl || t["media-url"];
-            return {
-              openUrl: e,
-              mediaUrl: s
-            }
+            const { openUrl, url, mediaUrl } = opts;
+            return { openUrl: openUrl || url || opts["open-url"], mediaUrl: mediaUrl || opts["media-url"] };
           }
           if (this.isQuanX()) {
-            let e = t["open-url"] || t.url || t.openUrl,
-              s = t["media-url"] || t.mediaUrl;
-            return {
-              "open-url": e,
-              "media-url": s
-            }
+            const { openUrl, url, mediaUrl } = opts;
+            return { "open-url": openUrl || url || opts.openUrl, "media-url": mediaUrl || opts.mediaUrl };
           }
           if (this.isSurge()) {
-            let e = t.url || t.openUrl || t["open-url"];
-            return {
-              url: e
-            }
+            const { url, openUrl } = opts;
+            return { url: url || openUrl || opts["open-url"] };
           }
         }
       };
-      this.isMute || (this.isSurge() || this.isLoon() ? $notification.post(e, s, i, r(o)) : this.isQuanX() && $notify(e, s, i, r(o)));
-      let h = ["", "==============📣系统通知📣=============="];
-      h.push(e), s && h.push(s), i && h.push(i), console.log(h.join("\n")), this.logs = this.logs.concat(h)
+
+      if (!this.isMute) {
+        this.isSurge() || this.isLoon() ? $notification.post(title, subtitle, body, formatOptions(options)) : this.isQuanX() && $notify(title, subtitle, body, formatOptions(options));
+      }
+      
+      const logContent = ["", "==============📣系统通知📣=============="];
+      logContent.push(title);
+      if (subtitle) logContent.push(subtitle);
+      if (body) logContent.push(body);
+      console.log(logContent.join(this.logSeparator));
+      this.logs = this.logs.concat(logContent);
     }
 
-    log(...t) {
-      t.length > 0 && (this.logs = [...this.logs, ...t]), console.log(t.join(this.logSeparator))
+    log(...messages) {
+      if (messages.length > 0) {
+        this.logs = [...this.logs, ...messages];
+        console.log(messages.join(this.logSeparator));
+      }
     }
 
-    logErr(t, e) {
-      const s = !this.isSurge() && !this.isQuanX() && !this.isLoon();
-      s ? this.log("", `❗️${this.name}, 错误!`, t.stack) : this.log("", `❗️${this.name}, 错误!`, t)
+    logErr(error, context) {
+      const isStrangeError = !this.isSurge() && !this.isQuanX() && !this.isLoon();
+      isStrangeError ? this.log("", `❗️${this.name}, 错误!`, error.stack) : this.log("", `❗️${this.name}, 错误!`, error);
     }
 
-    wait(t) {
-      return new Promise(e => setTimeout(e, t))
-    }
+    wait(timeout) { return new Promise(resolve => setTimeout(resolve, timeout)); }
 
-    done(t = {}) {
-      const e = (new Date).getTime() - this.startTime,
-        s = e / 1e3;
-      this.log("", `🔔${this.name}, 结束! 🕛 ${s} 秒`), this.log(), (this.isSurge() || this.isQuanX() || this.isLoon()) && $done(t)
+    done(data = {}) {
+      const elapsedTime = (new Date).getTime() - this.startTime;
+      const elapsedSeconds = elapsedTime / 1000;
+      this.log("", `🔔${this.name}, 结束! 🕛 ${elapsedSeconds} 秒`, this.logs.join(this.logSeparator));
+      this.isSurge() || this.isQuanX() || this.isLoon() && $done(data);
     }
-
-    notifySuccess(title, message, options = {}) {
-      this.msg(title, '', message, options);
-    }
-
-    notifyError(title, message, options = {}) {
-      this.msg(title, '', message, { ...options, icon: '❌' });
-    }
-  }(t, e)
+  }(name, options);
 }
