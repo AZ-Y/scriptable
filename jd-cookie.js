@@ -14,7 +14,7 @@ const $ = new Env('JD Cookie');
 function getAndStoreJdCookie() {
   try {
     let rawCookie = $request.headers['Cookie'] || $request.headers['cookie'];
-    console.log('获取的 Cookie:', rawCookie);  // 打印获取的 Cookie
+    console.log('获取的 Cookie:', rawCookie);
 
     if (rawCookie) {
       let ptPinMatch = rawCookie.match(/pt_pin=([^;]+);/);
@@ -23,14 +23,14 @@ function getAndStoreJdCookie() {
       if (ptPinMatch && ptKeyMatch) {
         let ptPin = ptPinMatch[1];
         let jdCookie = `pt_pin=${ptPin};pt_key=${ptKeyMatch[1]};`;
-        console.log('要保存的 JD Cookie:', jdCookie); // 日志
+        console.log('要保存的 JD Cookie:', jdCookie);
 
         let previousJdCookie = $.getdata(`jdCookie_${ptPin}`);
-        console.log('之前的 JD Cookie:', previousJdCookie); // 打印之前的 Cookie
+        console.log('之前的 JD Cookie:', previousJdCookie);
 
         if (jdCookie !== previousJdCookie) {
           $.setdata(jdCookie, `jdCookie_${ptPin}`);
-          console.log('JD Cookie 已保存:', jdCookie); // 日志
+          console.log('JD Cookie 已保存:', $.getdata(`jdCookie_${ptPin}`)); // 确认保存
 
           if (previousJdCookie) {
             $.msg(`JD Cookie 已更新`, `账号: ${ptPin}`, jdCookie);
