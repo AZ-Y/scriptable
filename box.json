@@ -2,7 +2,7 @@
   "id": "jd_cookie",
   "name": "AZ",
   "author": "@AZ-Y",
-  "icon": "https://qxnav.com/rules/QuantumultX/img/jd.png",
+  "icon": "https://raw.githubusercontent.com/AZ-Y/scriptable/refs/heads/main/boxjsTX.png.PNG",
   "repo": "https://github.com/AZ-Y/scriptable",
   "apps": [{
     "id": "jd_cookie",
