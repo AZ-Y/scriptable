@@ -9,7 +9,18 @@ hostname = %APPEND% api.m.jd.com
 
 ====================================*/
 
-const $ = new Env('JD Cookie');
+
+/*
+------------------------------------------
+[rewrite_local]
+^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=(wareBusiness|serverConfig|basicConfig) url script-response-body https://raw.githubusercontent.com/AZ-Y/scriptable/refs/heads/main/jd-cookie.js
+
+[MITM]
+hostname = %APPEND% api.m.jd.com
+
+====================================*/
+
+const $ = new Env('JD Multi Cookie');
 
 function getAndStoreJdCookie() {
   try {
@@ -17,31 +28,29 @@ function getAndStoreJdCookie() {
     console.log('获取的 Cookie:', rawCookie);
 
     if (rawCookie) {
+      // 解析 pt_pin 和 pt_key
       let ptPinMatch = rawCookie.match(/pt_pin=([^;]+);/);
       let ptKeyMatch = rawCookie.match(/pt_key=([^;]+);/);
       
       if (ptPinMatch && ptKeyMatch) {
-        let ptPin = ptPinMatch[1];
+        let ptPin = ptPinMatch[1]; // 改正这里: Pin应为ptPinMatch
         let jdCookie = `pt_pin=${ptPin};pt_key=${ptKeyMatch[1]};`;
         console.log('要保存的 JD Cookie:', jdCookie);
 
-        let previousJdCookie = $.getdata(`jdCookie_${ptPin}`);
-        console.log('之前的 JD Cookie:', previousJdCookie);
-
-        if (jdCookie !== previousJdCookie) {
-          $.setdata(jdCookie, `jdCookie_${ptPin}`);
-          console.log('JD Cookie 已保存:', $.getdata(`jdCookie_${ptPin}`)); // 确认保存
-
-          if (previousJdCookie) {
-            $.msg(`JD Cookie 已更新`, `账号: ${ptPin}`, jdCookie);
-          } else {
-            $.msg(`新增 JD Cookie`, `账号: ${ptPin}`, jdCookie);
-          }
-        } else {
-          $.log(`JD Cookie 未发生变化, 账号: ${ptPin}`);
+        // 获取现有 jdCookie，并连接新的 cookie
+        let existingCookies = $.getdata('jdCookie') || '';
+        if (existingCookies) {
+          existingCookies += '&'; // 用 & 隔开多个账号
         }
+        existingCookies += jdCookie; // 添加新的cookie到现有
+
+        // 保存更新后的 cookie
+        $.setdata(existingCookies, 'jdCookie');
+        console.log('JD Cookie 已保存:', $.getdata('jdCookie')); // 确认保存
+
+        $.msg(`JD Cookie 已更新`, `账号: ${ptPin}`, jdCookie);
       } else {
-        $.msg('错误', '', '无法从 Cookie 中提取 pt_pin 或 pt_key');
+        $.msg('错误', '', '无法从 Cookie 提取 pt_pin 或 pt_key');
       }
     } else {
       $.msg('错误', '', '无法获取 Cookie');
@@ -55,6 +64,8 @@ function getAndStoreJdCookie() {
 }
 
 getAndStoreJdCookie();
+
+
 
 function Env(name, options) {
   class Request {
