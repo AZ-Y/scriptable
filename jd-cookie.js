@@ -9,62 +9,47 @@ hostname = %APPEND% api.m.jd.com
 
 ====================================*/
 
+
 const $ = new Env('JD Cookie');
-$.cookie_key = 'jdCookie';
-$.cookies = $.getdata($.cookie_key);
-$.is_debug = $.getdata('is_debug');
+
+// 这里设定你的 BoxJS 密钥
+const BOXJS_KEY = 'jdCookie';
 
 !(async () => {
-  // 检查请求是否存在
-  if (typeof $request !== `undefined`) {
-    GetCookie($request);
-  } else {
-    $.msg('错误', '', '无请求数据，脚本无法运行');
-    $.done({});
-  }
-
-  function GetCookie(request) {
-    // 检查请求中是否存在 Cookie
-    if (request.headers && request.headers['Cookie']) {
-      let rawCookie = request.headers['Cookie'];
-      debug('获取的 Cookie:', rawCookie);
-
-      // 从 Cookie 中提取 pt_pin 和 pt_key
-      let ptPinMatch = rawCookie.match(/pt_pin=([^;]+)/);
-      let ptKeyMatch = rawCookie.match(/pt_key=([^;]+)/);
-      
+  if (typeof $request !== 'undefined') {
+    const request = $request;
+    const cookieHeader = request.headers['Cookie'];
+    if (cookieHeader) {
+      // 提取pt_pin和pt_key
+      const ptPinMatch = cookieHeader.match(/pt_pin=([^;]+)/);
+      const ptKeyMatch = cookieHeader.match(/pt_key=([^;]+)/);
       if (ptPinMatch && ptKeyMatch) {
-        let ptPin = ptPinMatch[1];
-        let ptKey = ptKeyMatch[1];
-        let jdCookie = `pt_pin=${ptPin};pt_key=${ptKey};`;
+        const ptPin = ptPinMatch[1];
+        const ptKey = ptKeyMatch[1];
+        const jdCookie = `pt_pin=${ptPin};pt_key=${ptKey};`;
 
-        // 获取现有的 jdCookie，并连接新的 cookie
-        let existingCookies = $.cookies || '';
-        if (existingCookies) {
-          existingCookies += '&'; // 用 & 隔开多个账号
+        // 储存 Cookie 到 BoxJS
+        let existingCookie = $persistentStore.read(BOXJS_KEY) || '';
+        if (existingCookie) {
+          existingCookie += '&'; // 连接多个 Cookie
         }
-        existingCookies += jdCookie; // 添加新的 cookie
+        existingCookie += jdCookie;
+        $persistentStore.write(existingCookie, BOXJS_KEY); // 更新 BoxJS 中的存储内容
 
-        // 保存更新后的 cookie
-        $.setdata(existingCookies, $.cookie_key);
-        $.msg('Cookie 已保存', '', `获取的 Cookie: ${jdCookie}`);
+        console.log(`Cookie 已保存: ${jdCookie}`);
+        $notify('Cookie 已保存', '', `获取的 Cookie: ${jdCookie}`);
       } else {
-        $.msg('错误', '', '无法从 Cookie 提取 pt_pin 或 pt_key');
+        console.error('未能从获取的 Cookie 中提取 pt_pin 或 pt_key');
       }
     } else {
-      debug('未能获取到 Cookie');
+      console.error('请求中未包含 Cookie');
     }
-  };
-
-  function debug(text) {
-    if ($.is_debug === 'true') {
-      console.log(text);
-    }
+  } else {
+    console.error('请求未定义，可能无法获取 Cookie');
   }
-
 })()
-.catch((e) => $.logErr(e))
-.finally(() => $.done());
+.catch((e) => console.error(`运行时错误: ${e}`))
+.finally(() => console.log('脚本执行完成'));
 
 // prettier-ignore
 function Env(name, options) {
