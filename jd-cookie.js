@@ -9,17 +9,6 @@ hostname = %APPEND% api.m.jd.com
 
 ====================================*/
 
-
-/*
-------------------------------------------
-[rewrite_local]
-^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=(wareBusiness|serverConfig|basicConfig) url script-response-body https://raw.githubusercontent.com/AZ-Y/scriptable/refs/heads/main/jd-cookie.js
-
-[MITM]
-hostname = %APPEND% api.m.jd.com
-
-====================================*/
-
 const $ = new Env('JD Multi Cookie');
 
 function getAndStoreJdCookie() {
