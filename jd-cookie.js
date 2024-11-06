@@ -9,53 +9,64 @@ hostname = %APPEND% api.m.jd.com
 
 ====================================*/
 
-const $ = new Env('JD Multi Cookie');
+const $ = new Env('JD Cookie');
+$.cookie_key = 'jdCookie';
+$.cookies = $.getdata($.cookie_key);
+$.is_debug = $.getdata('is_debug');
 
-function getAndStoreJdCookie() {
-  try {
-    let rawCookie = $request.headers['Cookie'] || $request.headers['cookie'];
-    console.log('获取的 Cookie:', rawCookie);
+!(async () => {
+  // 检查请求是否存在
+  if (typeof $request !== `undefined`) {
+    GetCookie($request);
+  } else {
+    $.msg('错误', '', '无请求数据，脚本无法运行');
+    $.done({});
+  }
 
-    if (rawCookie) {
-      // 解析 pt_pin 和 pt_key
-      let ptPinMatch = rawCookie.match(/pt_pin=([^;]+);/);
-      let ptKeyMatch = rawCookie.match(/pt_key=([^;]+);/);
+  function GetCookie(request) {
+    // 检查请求中是否存在 Cookie
+    if (request.headers && request.headers['Cookie']) {
+      let rawCookie = request.headers['Cookie'];
+      debug('获取的 Cookie:', rawCookie);
+
+      // 从 Cookie 中提取 pt_pin 和 pt_key
+      let ptPinMatch = rawCookie.match(/pt_pin=([^;]+)/);
+      let ptKeyMatch = rawCookie.match(/pt_key=([^;]+)/);
       
       if (ptPinMatch && ptKeyMatch) {
-        let ptPin = ptPinMatch[1]; // 改正这里: Pin应为ptPinMatch
-        let jdCookie = `pt_pin=${ptPin};pt_key=${ptKeyMatch[1]};`;
-        console.log('要保存的 JD Cookie:', jdCookie);
+        let ptPin = ptPinMatch[1];
+        let ptKey = ptKeyMatch[1];
+        let jdCookie = `pt_pin=${ptPin};pt_key=${ptKey};`;
 
-        // 获取现有 jdCookie，并连接新的 cookie
-        let existingCookies = $.getdata('jdCookie') || '';
+        // 获取现有的 jdCookie，并连接新的 cookie
+        let existingCookies = $.cookies || '';
         if (existingCookies) {
           existingCookies += '&'; // 用 & 隔开多个账号
         }
-        existingCookies += jdCookie; // 添加新的cookie到现有
+        existingCookies += jdCookie; // 添加新的 cookie
 
         // 保存更新后的 cookie
-        $.setdata(existingCookies, 'jdCookie');
-        console.log('JD Cookie 已保存:', $.getdata('jdCookie')); // 确认保存
-
-        $.msg(`JD Cookie 已更新`, `账号: ${ptPin}`, jdCookie);
+        $.setdata(existingCookies, $.cookie_key);
+        $.msg('Cookie 已保存', '', `获取的 Cookie: ${jdCookie}`);
       } else {
         $.msg('错误', '', '无法从 Cookie 提取 pt_pin 或 pt_key');
       }
     } else {
-      $.msg('错误', '', '无法获取 Cookie');
+      debug('未能获取到 Cookie');
     }
-  } catch (e) {
-    $.logErr(e);
-    $.msg('错误', '', '获取 Cookie 出现异常');
-  } finally {
-    $.done({});
+  };
+
+  function debug(text) {
+    if ($.is_debug === 'true') {
+      console.log(text);
+    }
   }
-}
 
-getAndStoreJdCookie();
+})()
+.catch((e) => $.logErr(e))
+.finally(() => $.done());
 
-
-
+// prettier-ignore
 function Env(name, options) {
   class Request {
     constructor(env) {
@@ -86,7 +97,7 @@ function Env(name, options) {
       this.name = name;
       this.http = new Request(this);
       this.data = null;
-      this.dataFile = "box.dat";
+      this.dataFile = "box.dat"; 
       this.logs = [];
       this.isMute = false;
       this.isNeedRewrite = false;
@@ -101,7 +112,6 @@ function Env(name, options) {
     isQuanX() { return typeof $task !== "undefined"; }
     isSurge() { return typeof $httpClient !== "undefined" && typeof $loon === "undefined"; }
     isLoon() { return typeof $loon !== "undefined"; }
-    isJSBox() { return typeof $app !== "undefined" && typeof $http !== "undefined"; }
 
     getdata(key) {
       if (this.isNode()) {
@@ -119,7 +129,9 @@ function Env(name, options) {
             return {};
           }
         } else return {};
-      } else return {};
+      } else {
+        return $persistentStore.read(key) || null; // 其他环境
+      }
     }
 
     setdata(value, key) {
@@ -128,83 +140,43 @@ function Env(name, options) {
         this.path = this.path || require("path");
         const filePath = this.path.resolve(this.dataFile);
         const cwdPath = this.path.resolve(process.cwd(), this.dataFile);
-        const fileExists = this.fs.existsSync(filePath) || this.fs.existsSync(cwdPath);
         
-        const jsonData = JSON.stringify(value);
-        if (fileExists) {
-          if (this.fs.existsSync(filePath)) {
-            this.fs.writeFileSync(filePath, jsonData);
-          } else {
-            this.fs.writeFileSync(cwdPath, jsonData);
-          }
+        // 婉拒操作
+        if (this.fs.existsSync(filePath)) {
+          this.fs.writeFileSync(filePath, JSON.stringify({ [key]: value }));
         } else {
-          this.fs.writeFileSync(filePath, jsonData);
+          this.fs.writeFileSync(cwdPath, JSON.stringify({ [key]: value }));
         }
       } else {
-        this.data = this.data || {};
-        return (this.data[key] = value, this.data);
+        $persistentStore.write(value, key); // 其他环境
       }
     }
 
-    getval(key) { return this.getdata(key); }
-    setval(value, key) { return this.setdata(value, key); }
-
-    get(url, options) { return this.send.call(this, url, options); }
-    post(url, options) { return this.send.call(this, url, "POST", options); }
-
-    msg(title = this.name, subtitle = "", body = "", options = {}) {
-      const formatOptions = (opts) => {
-        if (!opts) return opts;
-        if (typeof opts === "string") {
-          return this.isLoon() ? opts : this.isQuanX() ? { "open-url": opts } : this.isSurge() ? { url: opts } : void 0;
-        }
-        if (typeof opts === "object") {
-          if (this.isLoon()) {
-            const { openUrl, url, mediaUrl } = opts;
-            return { openUrl: openUrl || url || opts["open-url"], mediaUrl: mediaUrl || opts["media-url"] };
-          }
-          if (this.isQuanX()) {
-            const { openUrl, url, mediaUrl } = opts;
-            return { "open-url": openUrl || url || opts.openUrl, "media-url": mediaUrl || opts.mediaUrl };
-          }
-          if (this.isSurge()) {
-            const { url, openUrl } = opts;
-            return { url: url || openUrl || opts["open-url"] };
-          }
-        }
-      };
-
+    msg(title = this.name, subtitle = "", body = "") {
       if (!this.isMute) {
-        this.isSurge() || this.isLoon() ? $notification.post(title, subtitle, body, formatOptions(options)) : this.isQuanX() && $notify(title, subtitle, body, formatOptions(options));
+        if (this.isSurge() || this.isLoon()) {
+          $notification.post(title, subtitle, body);
+        } else if (this.isQuanX()) {
+          $notify(title, subtitle, body);
+        }
       }
-      
-      const logContent = ["", "==============📣系统通知📣=============="];
-      logContent.push(title);
-      if (subtitle) logContent.push(subtitle);
-      if (body) logContent.push(body);
-      console.log(logContent.join(this.logSeparator));
-      this.logs = this.logs.concat(logContent);
+      this.log(title, subtitle, body);
     }
 
     log(...messages) {
-      if (messages.length > 0) {
-        this.logs = [...this.logs, ...messages];
-        console.log(messages.join(this.logSeparator));
-      }
+      console.log(messages.join(this.logSeparator));
     }
 
-    logErr(error, context) {
-      const isStrangeError = !this.isSurge() && !this.isQuanX() && !this.isLoon();
-      isStrangeError ? this.log("", `❗️${this.name}, 错误!`, error.stack) : this.log("", `❗️${this.name}, 错误!`, error);
+    logErr(e) {
+      console.error(`❗️${this.name} 错误: ${e}`);
     }
-
-    wait(timeout) { return new Promise(resolve => setTimeout(resolve, timeout)); }
 
     done(data = {}) {
       const elapsedTime = (new Date).getTime() - this.startTime;
-      const elapsedSeconds = elapsedTime / 1000;
-      this.log("", `🔔${this.name}, 结束! 🕛 ${elapsedSeconds} 秒`, this.logs.join(this.logSeparator));
-      this.isSurge() || this.isQuanX() || this.isLoon() && $done(data);
+      console.log(`🔔${this.name}, 结束! 🕛 ${elapsedTime / 1000} 秒`);
+      if (this.isSurge() || this.isQuanX() || this.isLoon()) {
+        $done(data);
+      }
     }
   }(name, options);
 }
