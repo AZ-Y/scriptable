@@ -29,7 +29,7 @@ hostname = %APPEND% api.m.jd.com
  
 
 const $ = new Env('京东 Cookie');
-$.body_key = 'jd_cookie_body'; // 存储 Cookie 的键
+$.body_key = 'jdCookie'; // 存储 Cookie 的键
 $.body = $.getdata($.body_key);
 $.is_debug = $.getdata('is_debug');
 
@@ -50,7 +50,7 @@ $.is_debug = $.getdata('is_debug');
       let newCookie = `pt_pin=${pt_pin}; pt_key=${pt_key};`;
       
       // 从存储中读取已有的 Cookie
-      let savedCookie = $.getdata(`Cookie_${pt_pin}`);
+      let savedCookie = $.getdata(`jdCookie_${pt_pin}`);
       
       // 如果新 Cookie 不同于已保存的 Cookie，则更新
       if (savedCookie !== newCookie) {
@@ -62,7 +62,7 @@ $.is_debug = $.getdata('is_debug');
         $.msg(title, subtitle, message);
         
         // 保存到设置中
-        $.setdata(newCookie, `Cookie_${pt_pin}`);
+        $.setdata(newCookie, `jdCookie_${pt_pin}`);
         console.log(`获取的 Cookie: ${newCookie}`);
 
         // 将新 Cookie 存入 BoxJS
@@ -81,6 +81,7 @@ $.is_debug = $.getdata('is_debug');
 })()
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
+
 
 
 // prettier-ignore
