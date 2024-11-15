@@ -26,62 +26,15 @@ http-request ^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=(wareBusine
 [MITM]
 hostname = %APPEND% api.m.jd.com
 */
- 
+ // BoxJS 相关设置
+const  = new'京东 Cookie')
+const  = 'jdCookie'
+$. = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');
+$. = $.getdata(body_key;body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');
+$. = $.getdata('is_debug')
 
-const $ = new Env('京东 Cookie');
-$.body_key = 'jdCookie'; // 存储 Cookie 的键
-$.body = $.getdata($.body_key);
-$.is_debug = $.getdata('is_debug');
-
-!(async () => {
-  if (typeof $request !== 'undefined') {
-    GetCookie($request);
-  }
-
-  function GetCookie(request) {
-    // 获取请求中的 Cookie
-    let cookie = request.headers['Cookie'] || request.headers['cookie'];
-    let ptPinMatch = cookie.match(/pt_pin=(.*?);/);
-    let ptKeyMatch = cookie.match(/pt_key=(.*?);/);
-    
-    if (ptPinMatch && ptKeyMatch) {
-      let pt_pin = ptPinMatch[1];
-      let pt_key = ptKeyMatch[1];
-      let newCookie = `pt_pin=${pt_pin}; pt_key=${pt_key};`;
-      
-      // 从存储中读取已有的 Cookie
-      let savedCookie = $.getdata(`jdCookie_${pt_pin}`);
-      
-      // 如果新 Cookie 不同于已保存的 Cookie，则更新
-      if (savedCookie !== newCookie) {
-        let title = "Cookie 更新";
-        let subtitle = `账号: ${pt_pin}`;
-        let message = `新的Cookie: ${newCookie}`;
-
-        // 发送通知
-        $.msg(title, subtitle, message);
-        
-        // 保存到设置中
-        $.setdata(newCookie, `jdCookie_${pt_pin}`);
-        console.log(`获取的 Cookie: ${newCookie}`);
-
-        // 将新 Cookie 存入 BoxJS
-        const boxJsKey = `jdCookie_${pt_pin}`;
-        if (typeof $boxjs !== 'undefined') {
-          $boxjs.setValue(boxJsKey, newCookie); // 这里假设 BoxJS API 是 setValue
-        }
-      }
-    } else {
-      // 如果没有获取到 pt_pin 或 pt_key，发送错误通知
-      $.msg("Cookie 错误", "", "无法提取 pt_pin 或 pt_key。");
-      console.log("无法提取 pt_pin 或 pt_key。");
-    }
-  }
-
-})()
-  .catch((e) => $.logErr(e))
-  .finally(() => $.done());
-
+! ()is_debug;body$.)$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie'););body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');
+(async => {// 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');;body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie'););body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');('is_debug');body$.)// 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');;body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键 => {is_debug;body$.)// 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');;body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie'););body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');('is_debug');body$.)// 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');; // 在 BoxJS 中存储 Cookie 的键$ Env(;('京东 Cookie');;body_key = BOXJS_KEY;BOXJS_KEY; // 在 BoxJS 中存储 Cookie 的键
 
 
 // prettier-ignore
